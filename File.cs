@@ -45,7 +45,7 @@ namespace EA_ADPCM_CSharp
 				return wavHeader;
 			}
 		};
-		WAVHEADER defaul_wav_header =new WAVHEADER{
+		public WAVHEADER defaul_wav_header =new WAVHEADER{
 			chunkId = new char[]{ 'R', 'I', 'F', 'F' },
 			chunkSize=0,
 			format = new char[]{ 'W', 'A', 'V', 'E' },
@@ -61,12 +61,12 @@ namespace EA_ADPCM_CSharp
 			subchunk2Id = new char[]{ 'd', 'a', 't', 'a' },
 			subchunk2Size=0
 		};
-		unsafe struct WAV_meta
+		public unsafe struct WAV_meta
 		{
 			public Int16* PCM;
 			public size_t n_samples_per_channel;
 		};
-		unsafe void MakeWavHeader(WAVHEADER* wav_header, int sample_rate, int num_samples, int num_channels)
+		public unsafe void MakeWavHeader(WAVHEADER* wav_header, int sample_rate, int num_samples, int num_channels)
 		{
 			WAVHEADER tempq =  defaul_wav_header;
 			wav_header = &tempq;
@@ -79,15 +79,16 @@ namespace EA_ADPCM_CSharp
 			wav_header->blockAlign = (ushort)block_align;
 			wav_header->subchunk2Size = (uint)data_size;
 		}
-		unsafe WAV_meta ReadWAV(string wav_file, WAVHEADER* wav_header)
+		public unsafe WAV_meta ReadWAV(string wav_file, WAVHEADER* wav_header)
 		{
 			WAV_meta wavMeta = new WAV_meta{ PCM = null, n_samples_per_channel = 0};
 			BinaryReader br = new(new FileStream(wav_file, FileMode.Open));
 			WAVHEADER temp = (WAVHEADER)br.ReadBytes(sizeof(WAVHEADER));
 			wav_header = &temp;
 			wavMeta.n_samples_per_channel = wav_header->subchunk2Size / wav_header->numChannels / 2;
-			Int16* temps = stackalloc Int16[(int)wav_header->subchunk2Size];
-			wavMeta.PCM = temps;
+			Int16[] temps = new Int16[(int)wav_header->subchunk2Size];
+			void* temps_1 = &temps;
+			wavMeta.PCM = (short*)temps_1;
 
 			return wavMeta;
 		}
@@ -101,7 +102,7 @@ namespace EA_ADPCM_CSharp
 			}
 			return bytes;
 		}
-		unsafe bool EncodeWav(string wav_file, string raw_file, WAVHEADER wav_header) {
+		public unsafe bool EncodeWav(string wav_file, string raw_file, WAVHEADER wav_header) {
 			WAV_meta wav_meta = ReadWAV(wav_file, &wav_header);
 			if (wav_meta.PCM == null) {
 				return false;
@@ -109,8 +110,10 @@ namespace EA_ADPCM_CSharp
 			UInt32 n_samples_per_channel = (uint)wav_meta.n_samples_per_channel;
 			size_t encoded_size = EA_ADPCM_XAS.GetXASEncodedSize(n_samples_per_channel, wav_header.numChannels);
 			byte[] encoded_data = new byte[(int)encoded_size];
-			EA_ADPCM_XAS.EncodeXAS(&encoded_data, wav_meta.PCM, n_samples_per_channel, wav_header.numChannels);
+			byte[]* temp_2 = &encoded_data;
+			EA_ADPCM_XAS.EncodeXAS(temp_2, wav_meta.PCM, n_samples_per_channel, wav_header.numChannels);
 			BinaryWriter bw = new(new FileStream(raw_file, FileMode.Open));
+			encoded_data = temp_2->ToArray();
 			bw.Write(encoded_data);
 			bw.Close();
 			return true;
@@ -120,7 +123,7 @@ namespace EA_ADPCM_CSharp
 			FileInfo fileInfo = new FileInfo(filePath);
 			return (short)fileInfo.Length;
 		}
-		unsafe bool DecodeRaw(string raw_file, string wav_file, WAVHEADER wav_header) {
+		public unsafe bool DecodeRaw(string raw_file, string wav_file, WAVHEADER wav_header) {
 			size_t raw_size = (nuint)GetFileSize(raw_file);
 			BinaryReader br = new(new FileStream(raw_file, FileMode.Open));
 			byte[] temps = br.ReadBytes((int)raw_size);

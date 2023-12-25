@@ -7,4 +7,13 @@ Perhaps this project is just a (garbage?) project that borrows code from others 
 
 I hope it can help you, even if I know this project may compile and report a bunch of errors.
 
+#### execute
+
 I compiled it using VS2022
+
+#### log
+
+```
+2023/12/25:
+I am unable to fix and run this project, I think I need to learn some knowledge.
+```

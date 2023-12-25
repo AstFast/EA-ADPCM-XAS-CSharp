@@ -21,7 +21,7 @@ namespace EA_ADPCM_CSharp
 			return EA_ADPCM_XAS_Work.GetXASEncodedSize(n_samples_per_channel, n_channels);
 		}
 	}
-	class EA_ADPCM_XAS_Work:Constant
+	internal class EA_ADPCM_XAS_Work:Constant
 	{
 		
 		private static sbyte Clip_int4(sbyte val)
@@ -30,21 +30,16 @@ namespace EA_ADPCM_CSharp
 			if (val <= -8) return -8;
 			return val;
 		}
-
 		private static short Clip_int16(int val)
 		{
 			return (short)((val >= 0x7FFF) ? 0x7FFF : (val <= -0x8000) ? -0x8000 : val);
 		}
-
-		// ~same method as in SX but with fixed point
 		private static unsafe int simple_CalcCoefShift(short* pSamples, short* in_prevSamples, int num_samples, int* out_coef_index, byte* out_shift)
 		{
-			// SX using clip here
-
 			const int num_coefs = 4;
 
 			int min_max_error = int.MaxValue;
-			int s_min_max_error = int.MaxValue; // don't need I think
+			int s_min_max_error = int.MaxValue;
 			int best_coef_ind = 0;
 			short* prevSamples = stackalloc short[2];
 
@@ -52,9 +47,6 @@ namespace EA_ADPCM_CSharp
 			{
 				prevSamples[0] = in_prevSamples[0];
 				prevSamples[1] = in_prevSamples[1];
-
-				// fixed point 24.8
-				// for coef_ind = 0 max_error = max abs sample
 				int max_error = 0;
 				int s_max_error = 0;
 				for (int i = 0; i < num_samples; i++)
@@ -113,8 +105,8 @@ namespace EA_ADPCM_CSharp
 
 		private unsafe struct XAS_Chunk
 		{
-			public fixed uint headers[4]; // total size 16 bytes, 8 samples
-			public fixed byte XAS_data[60]; // data for each 2 samples (1 bytes) interleaved, total size 60 bytes, 120 samples
+			public fixed uint headers[4];
+			public fixed byte XAS_data[60];
 		}
 
 		private struct XAS_SubChunkHeader
@@ -228,7 +220,7 @@ namespace EA_ADPCM_CSharp
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				short* pSamples = out_PCM + j * 32;
+				Int16* pSamples = out_PCM + j * 32;
 
 				pSamples[0] = ((short)(((XAS_SubChunkHeader*)in_chunk->headers)[j].sample_0 << 4));
 				int coef_index = (int)((XAS_SubChunkHeader*)in_chunk->headers)[j].coef_index;
@@ -236,14 +228,15 @@ namespace EA_ADPCM_CSharp
 				pSamples[1] = ((short)(((XAS_SubChunkHeader*)in_chunk->headers)[j].sample_1 << 4));
 				byte shift = (byte)(12 + 8 - ((XAS_SubChunkHeader*)in_chunk->headers)[j].exp_shift);
 
-				short[] coef = ea_adpcm_table_v2[coef_index];
+				short[] temp_1 = ea_adpcm_table_v2[coef_index];
+				short[]* coef = &temp_1;
 
 				for (int i = 0; i < 15; i++, pSamples += 2)
 				{
 					SamplesByte data = *(SamplesByte*)&(in_chunk->XAS_data[i * 4 + j]);
 
-					pSamples[2] = decode_XA_sample(pSamples, coef, (sbyte)data.sample0, shift);
-					pSamples[3] = decode_XA_sample(pSamples + 1, coef, (sbyte)data.sample1, shift);
+					pSamples[2] = decode_XA_sample(pSamples, coef->ToArray(), (sbyte)data.sample0, shift);
+					pSamples[3] = decode_XA_sample(pSamples + 1, coef->ToArray(), (sbyte)data.sample1, shift);
 				}
 			}
 		}
@@ -344,7 +337,7 @@ namespace EA_ADPCM_CSharp
 					{
 						EncodedSample enc = encode_XA_sample(pDecodedSamples, coef, pInSamples[2], shift);
 
-						pDecodedSamples[2] = enc.decoded; // think as decoder will for better precision
+						pDecodedSamples[2] = enc.decoded;
 						data <<= 4;
 						data |= (byte)(enc.encoded & 0xF);
 						pInSamples++;

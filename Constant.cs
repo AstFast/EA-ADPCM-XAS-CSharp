@@ -17,28 +17,21 @@ namespace EA_ADPCM_CSharp
 		internal const int fixed_point_offset = 8;
 		internal const int fixp_exponent = 1 << fixed_point_offset;
 		internal const int def_rounding = (fixp_exponent >> 1);
-		internal static short[][] ea_adpcm_table_v2 = new[]
-		{
-				new[]{ (short)(0.000000 * 256), (short)(0.000000 * 256) },
-				new[]{ (short)(0.937500 * 256), (short)(0.000000 * 256) },
-				new[]{ (short)(1.796875 * 256), (short)(-0.812500 * 256) },
-				new[]{ (short)(1.531250 * 256), (short)(-0.859375 * 256) },
-		};
+		internal static short[][] ea_adpcm_table_v2 =
+		[
+				[(short)(0.000000 * 256), (short)(0.000000 * 256)],
+				[(short)(0.937500 * 256), (short)(0.000000 * 256)],
+				[(short)(1.796875 * 256), (short)(-0.812500 * 256)],
+				[(short)(1.531250 * 256), (short)(-0.859375 * 256)],
+		];
 		internal struct EncodedSample
 		{
 			public short decoded;
 			public sbyte encoded;
 		};
-		/*
 		internal struct SamplesByte
 		{
-			public int sample1;
-			public int sample0;
-		};
-		*/
-		internal struct SamplesByte
-		{
-			private byte data;
+			private int data;
 
 			public int sample1
 			{
@@ -58,11 +51,11 @@ namespace EA_ADPCM_CSharp
 					Debug.Assert(value >= -8 && value < 8);
 					if (value < 0)
 					{
-						data = ((byte)((data & ~0b1111) | (value + 16)));
+						data = (data & ~0b1111) | (value + 16);
 					}
 					else
 					{
-						data = ((byte)((data & ~0b1111) | value));
+						data = ((data & ~0b1111) | value);
 					}
 				}
 			}
@@ -85,19 +78,14 @@ namespace EA_ADPCM_CSharp
 					Debug.Assert(value >= -8 && value < 8);
 					if (value < 0)
 					{
-						data = ((byte)((data & ~(0b1111 << 4)) | ((value + 16) << 4)));
+						data = ((data & ~(0b1111 << 4)) | ((value + 16) << 4));
 					}
 					else
 					{
-						data = ((byte)((data & ~(0b1111 << 4)) | (value << 4)));
+						data = ((data & ~(0b1111 << 4)) | (value << 4));
 					}
 				}
 			}
 		}
-
-		internal struct SamplesDWORD
-		{
-			Int16[] samples;
-		};
 	}
 }
