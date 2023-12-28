@@ -16,4 +16,6 @@ I compiled it using VS2022
 ```
 2023/12/25:
 I am unable to fix and run this project, I think I need to learn some knowledge.
+2023/12/28:
+Attempt to rewrite again
 ```
