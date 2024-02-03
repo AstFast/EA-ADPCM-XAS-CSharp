@@ -4,6 +4,12 @@
 
 It allows you to encode PCM as EA-ADPCM-XAS
 
+### Functional support
+
+- [x] Encoded
+
+- [ ] Decoded
+
 ### Source
 
 Original project:[GitHub - CrabJournal/EA-ADPCM-Codec](https://github.com/CrabJournal/EA-ADPCM-Codec)
@@ -18,7 +24,7 @@ uint channels;
 byte[] raw_data;//Raw data, required to be PCM (no other encoding)
 //Start
 using EA_ADPCM_XAS_CSharp;
-uint encoded_size = EncodeXAS.GetXASEncodedSize(n_samples_per_channel, wav_header.numChannels);
+uint encoded_size = EncodeXAS.GetXASEncodedSize(n_samples_per_channel, channels);
 byte[] encoded_data = new byte[encoded_size];
 encoded_data = EncodeXAS.Encode(data, n_samples_per_channel,channels);
 //encoded_ data is the encoded data
