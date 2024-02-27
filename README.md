@@ -2,7 +2,7 @@
 
 ### Content
 
-It allows you to encode/decode PCM as EA-ADPCM-XAS
+It allows decoding/encoding between PCM and EA-ADPCM-XAS
 
 ### Functional support
 
