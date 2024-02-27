@@ -4,8 +4,8 @@ using static EA_ADPCM_XAS_CSharp.XASStruct;
 
 namespace EA_ADPCM_XAS_CSharp
 {
-
-	internal  unsafe static class SIMD
+	//Temporarily stored for future updates
+	internal unsafe static class SIMD
 	{
 		
 		static Vector128<uint> GetOnes128()
