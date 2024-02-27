@@ -2,13 +2,13 @@
 
 ### Content
 
-It allows you to encode PCM as EA-ADPCM-XAS
+It allows you to encode/decode PCM as EA-ADPCM-XAS
 
 ### Functional support
 
 - [x] Encoded
 
-- [ ] Decoded
+- [x] Decoded
 
 ### Source
 
@@ -28,6 +28,14 @@ uint encoded_size = EncodeXAS.GetXASEncodedSize(n_samples_per_channel, channels)
 byte[] encoded_data = new byte[encoded_size];
 encoded_data = EncodeXAS.Encode(data, n_samples_per_channel,channels);
 //encoded_ data is the encoded data
+
+
+//Decode Mode
+uint channels;
+uint Sample;//it is writed in wav file
+byte[] raw;
+//I can only write this temporarily
+var decode_data = DecodeXAS.Decode(raw,channels);
 ```
 
 ### Problem
@@ -56,6 +64,12 @@ Although not as fast as C++, the speed is still acceptable within a certain rang
 
 ### TODO:
 
-Resolve decoding issues
+Optimize decoding code
+
+Provide faster decoding methods?
 
 more problems
+
+### Statement:
+
+The decoding part used another person's code, but I don't know their name
