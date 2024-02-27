@@ -4,10 +4,17 @@ namespace EA_ADPCM_XAS_CSharp
 {
 	public static class DecodeXAS
 	{
+		
+		public static byte[] Decode(byte[] data, uint channels)
+		{
+			return DecodeCode.Decode(data,channels);
+		}
+		/*
 		public static short[] Decode(byte[] in_data, uint channels)
 		{
 			return new Decode_Data().Decode(in_data,channels);
 		}
+		*/
 	}
 	public static class EncodeXAS
 	{
@@ -36,6 +43,15 @@ namespace EA_ADPCM_XAS_CSharp
 			[(short)(1.796875 * fixp_exponent), (short)(-0.812500 * fixp_exponent)],
 			[(short)(1.531250 * fixp_exponent), (short)(-0.859375 * fixp_exponent)],
 		];
+		public static short[][] ea_adpcm_table_v3 =
+		[
+			[(short)(0.000000 * fixp_exponent), (short)(0.000000 * fixp_exponent)],
+			[(short)(0.000000 * fixp_exponent), (short)(0.937500 * fixp_exponent)],
+			[(short)(-0.812500 * fixp_exponent), (short)(1.796875 * fixp_exponent)],
+			[(short)(-0.859375 * fixp_exponent), (short)(1.531250 * fixp_exponent)]
+		];
+		
+		
 		public static int Clip_int16(int val)
 		{
 			return (val >= 0x7FFF) ? 0x7FFF : (val <= -0x8000) ? -0x8000 : val;
