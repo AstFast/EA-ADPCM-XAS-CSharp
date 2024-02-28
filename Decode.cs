@@ -97,12 +97,7 @@ namespace EA_ADPCM_XAS_CSharp.Decode
 				}
 			}
 		}
-		byte[] ShortArrayToByteArray(short[] shortArray)
-		{
-			byte[] byteArray = new byte[shortArray.Length * 2];
-			Buffer.BlockCopy(shortArray, 0, byteArray, 0, byteArray.Length);
-			return byteArray;
-		}
+		
 
 		public short[] Decode(byte[] in_data,uint channels)
 		{

@@ -9,12 +9,12 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			return DecodeCode.Decode(data,channels);
 		}
-		/*
-		public static short[] Decode(byte[] in_data, uint channels)
+		
+		public static byte[] DecodeSIMD(byte[] in_data, uint channels)
 		{
-			return new Decode_Data().Decode(in_data,channels);
+			return XASStruct.ShortArrayToByteArray(new Decode_Data().Decode(in_data,channels));
 		}
-		*/
+		
 	}
 	public static class EncodeXAS
 	{
@@ -50,8 +50,9 @@ namespace EA_ADPCM_XAS_CSharp
 			[(short)(-0.812500 * fixp_exponent), (short)(1.796875 * fixp_exponent)],
 			[(short)(-0.859375 * fixp_exponent), (short)(1.531250 * fixp_exponent)]
 		];
-		
-		
+		public static int[] ea_adpcm_table_v4 =[0,240,460,392];
+		public static int[] const_shift = [16 - fixed_point_offset, 16 - fixed_point_offset , 16 - fixed_point_offset , 16 - fixed_point_offset];
+		public static byte[] shuffle = [12, 8, 4, 0,   13, 9, 5, 1,   14, 10, 6, 2,    15, 11, 7, 3];
 		public static int Clip_int16(int val)
 		{
 			return (val >= 0x7FFF) ? 0x7FFF : (val <= -0x8000) ? -0x8000 : val;
@@ -73,6 +74,12 @@ namespace EA_ADPCM_XAS_CSharp
 		public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
 		{
 			return GetNumXASTotalChunks(n_samples_per_channel, n_channels) * 76;
+		}
+		public static byte[] ShortArrayToByteArray(short[] shortArray)
+		{
+			byte[] byteArray = new byte[shortArray.Length * 2];
+			Buffer.BlockCopy(shortArray, 0, byteArray, 0, byteArray.Length);
+			return byteArray;
 		}
 		public struct SamplesByte
 		{
