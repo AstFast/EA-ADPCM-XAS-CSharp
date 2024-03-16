@@ -14,9 +14,18 @@ It allows decoding/encoding between PCM and EA-ADPCM-XAS
 
 Original project:[GitHub - CrabJournal/EA-ADPCM-Codec](https://github.com/CrabJournal/EA-ADPCM-Codec)
 
+### Compile
+
+I compiled it using VS2022
+
+Release version requires `Net8` environment
+
+If you need to be compatible with lower versions, please open your compilation software and delete the section about SIMD, then make slight modifications (mainly using the Net8 writing method for a small part, which is more convenient). You need to change it to consider it as a writing method below Net8 (Don't worry, it's very simple. You just need to change `[]` back to `new <T>[]{}`)
+
 ### Demo
 
 ```csharp
+//
 //Encode Mode
 //You need to prepare the following parameters.
 uint n_samples_per_channel;
@@ -36,6 +45,10 @@ uint Sample;//it is writed in wav file
 byte[] raw;
 //I can only write this temporarily
 var decode_data = DecodeXAS.Decode(raw,channels);
+//This function is only intended to support lower versions
+//end
+//if you want get more quick decode you should use Using DecodeSIMD() function
+var decode_data = DecodeXAS.DecodeSIMD(raw,channels);
 ```
 
 ### Problem

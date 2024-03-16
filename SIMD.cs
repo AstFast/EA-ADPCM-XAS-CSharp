@@ -4,6 +4,7 @@ using static EA_ADPCM_XAS_CSharp.XASStruct;
 using int32x4 = System.Runtime.Intrinsics.Vector128<int>;
 using uint32x4 = System.Runtime.Intrinsics.Vector128<uint>;
 using int16x8 = System.Runtime.Intrinsics.Vector128<short>;
+using System.Runtime.CompilerServices;
 namespace EA_ADPCM_XAS_CSharp
 {
 	//Temporarily stored for future updates
@@ -23,25 +24,42 @@ namespace EA_ADPCM_XAS_CSharp
 			tmp = Sse41.Insert(tmp, mem[Sse41.Extract(indexes, 3)], 3);
 			return tmp;
 		}
-		static void SaveWithStep(int32x4 vect, ref short[] mem,int step)
+		static short[] IntToShortArray(int value)
 		{
-			int[] ints = new int[mem.Length/2];
-			Buffer.BlockCopy(mem,0,ints,0,mem.Length*2);
-			ints[0] = Sse41.Extract(vect, 0);
-			ints[step] = Sse41.Extract(vect, 1);
-			ints[step * 2] = Sse41.Extract(vect, 2);
-			ints[step * 3] = Sse41.Extract(vect, 3);
-			Buffer.BlockCopy(ints,0,mem,0,mem.Length*2);
+			return new short[] { (short)(value & 0xFFFF), (short)((value >> 16) & 0xFFFF) };
 		}
-		static void SaveWithStep(int32x4 vect, ref short[] mem,int index, int step)
+
+		static void SaveWithStep(int32x4 vect, ref short[] mem, int step)
 		{
-			int[] ints = new int[(mem.Length-index) / 2];
-			Buffer.BlockCopy(mem, index*2, ints, 0, ints.Length*4);
-			ints[0] = Sse41.Extract(vect, 0);
-			ints[step] = Sse41.Extract(vect, 1);
-			ints[step * 2] = Sse41.Extract(vect, 2);
-			ints[step * 3] = Sse41.Extract(vect, 3);
-			Buffer.BlockCopy(ints, 0, mem, index*2, ints.Length*4);
+			short[] temp;
+			temp = IntToShortArray(Sse41.Extract(vect, 0));
+			mem[0] = temp[0];
+			mem[1] = temp[1];
+			temp = IntToShortArray(Sse41.Extract(vect, 1));
+			mem[step * 2] = temp[0];
+			mem[step * 2 + 1] = temp[1];
+			temp = IntToShortArray(Sse41.Extract(vect, 2));
+			mem[step * 2 * 2] = temp[0];
+			mem[step * 2 * 2 + 1] = temp[1];
+			temp = IntToShortArray(Sse41.Extract(vect, 3));
+			mem[step * 2 * 3] = temp[0];
+			mem[step * 2 * 3 + 1] = temp[0];
+		}
+		static void SaveWithStep(int32x4 vect, ref short[] mem,int index,int step)
+		{
+			short[] temp;
+			temp = IntToShortArray(Sse41.Extract(vect, 0));
+			mem[0 + index] = temp[0];
+			mem[1 + index] = temp[1];
+			temp = IntToShortArray(Sse41.Extract(vect, 1));
+			mem[step * 2 + index] = temp[0];
+			mem[step * 2 + 1 + index] = temp[1];
+			temp = IntToShortArray(Sse41.Extract(vect, 2));
+			mem[step * 2 * 2 + index] = temp[0];
+			mem[step * 2 * 2 + 1 + index] = temp[1];
+			temp = IntToShortArray(Sse41.Extract(vect, 3));
+			mem[step * 2 * 3 + index] = temp[0];
+			mem[step * 2 * 3 + 1 + index] = temp[0];
 		}
 		static void SaveWithStep(int32x4 vect,ref int[] mem, int step)
 		{
@@ -49,6 +67,24 @@ namespace EA_ADPCM_XAS_CSharp
 			mem[step] = Sse41.Extract(vect, 1);
 			mem[step * 2] = Sse41.Extract(vect, 2);
 			mem[step * 3] = Sse41.Extract(vect, 3);
+		}
+		static void SaveWithStep(int32x4 vect, int* mem, int step)
+		{
+			mem[0] = Sse41.Extract(vect, 0);
+			mem[step] = Sse41.Extract(vect, 1);
+			mem[step * 2] = Sse41.Extract(vect, 2);
+			mem[step * 3] = Sse41.Extract(vect, 3);
+		}
+		static void SaveWithStep_low_4(Vector128<short> vect,ref short[] mem, int step)
+		{
+			int index = 0;
+			mem[index] = (short)Sse41.Extract(vect.AsUInt16(), 0);
+			index += step;
+			mem[index] = (short)Sse41.Extract(vect.AsUInt16(), 1);
+			index += step;
+			mem[index] = (short)Sse41.Extract(vect.AsUInt16(), 2);
+			index += step;
+			mem[index] = (short)Sse41.Extract(vect.AsUInt16(), 3);
 		}
 		static Vector128<int> PermuteByIndex(Vector128<int> vect, Vector128<int> index)
 		{
@@ -86,7 +122,8 @@ namespace EA_ADPCM_XAS_CSharp
 			{
 				temp[i] = (int)in_chunk.headers[i].data;
             }
-            Vector128<int> head = LoadUnaligned((int*)&temp);
+			//Vector128<int> head = LoadUnaligned((int*)&temp);
+			Vector128<int> head = Vector128.Create(temp);
 			uint32x4 rounding = GetOnes128();
 			uint32x4 coef_mask = rounding >> 30;
 			int32x4 nibble_mask = rounding.AsInt32() << 28;
