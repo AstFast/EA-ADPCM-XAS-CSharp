@@ -4,7 +4,6 @@ using static EA_ADPCM_XAS_CSharp.XASStruct;
 using int32x4 = System.Runtime.Intrinsics.Vector128<int>;
 using uint32x4 = System.Runtime.Intrinsics.Vector128<uint>;
 using int16x8 = System.Runtime.Intrinsics.Vector128<short>;
-using System.Runtime.CompilerServices;
 namespace EA_ADPCM_XAS_CSharp
 {
 	//Temporarily stored for future updates
