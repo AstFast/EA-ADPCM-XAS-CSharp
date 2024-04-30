@@ -3,9 +3,9 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 {
 	internal class Encode_Data
 	{
-		EncodedSample encode_XA_sample(Int16[] prev_samples, Int16[] coef, int sample, int shift)
+		EncodedSample encode_XA_sample(Int16 prev_samples,Int16 prev_samples1, Int16[] coef, int sample, int shift)
 		{
-			int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
+			int prediction = prev_samples1 * coef[0] + prev_samples * coef[1];
 
 			int correction = (sample << fixed_point_offset) - prediction;
 			int res;
@@ -113,7 +113,7 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 					byte data = 0;
 					for (int n = 0; n < 2; n++)
 					{
-						EncodedSample enc = encode_XA_sample([pDecodedSamples[index], pDecodedSamples[index + 1]], coef, pInSamples[2 + index], shift);
+						EncodedSample enc = encode_XA_sample(pDecodedSamples[index], pDecodedSamples[index + 1], coef, pInSamples[2 + index], shift);
 						pDecodedSamples[2 + index] = enc.decoded;
 						data <<= 4;
 						data |= (byte)(enc.encoded & 0xF);

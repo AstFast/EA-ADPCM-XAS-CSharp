@@ -4,23 +4,23 @@ namespace EA_ADPCM_XAS_CSharp
 {
 	public static class DecodeXAS
 	{
-		
+
 		public static byte[] Decode(byte[] data, uint channels)
 		{
-			return DecodeCode.Decode(data,channels);
+			return DecodeCode.Decode(data, channels);
 		}
-		
+
 		public static byte[] DecodeSIMD(byte[] in_data, uint channels)
 		{
-			return XASStruct.ShortArrayToByteArray(new Decode_Data().Decode(in_data,channels));
+			return XASStruct.ShortArrayToByteArray(new Decode_Data().Decode(in_data, channels));
 		}
-		
+
 	}
 	public static class EncodeXAS
 	{
 		public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
 		{
-			return XASStruct.GetXASEncodedSize(n_samples_per_channel,n_channels);
+			return XASStruct.GetXASEncodedSize(n_samples_per_channel, n_channels);
 		}
 		public static byte[] Encode(byte[] rawdata, uint n_samples_per_channel, uint channels)
 		{
@@ -37,22 +37,22 @@ namespace EA_ADPCM_XAS_CSharp
 		public const int shift4_rounding = 0x8 - 1;
 		public const int fixp_exponent = 1 << fixed_point_offset;
 		public const int def_rounding = (fixp_exponent >> 1);
-		public static short[][] ea_adpcm_table_v2 = [
-				[(short)(0.000000 * fixp_exponent), (short)(0.000000 * fixp_exponent)],
-			[(short)(0.937500 * fixp_exponent), (short)(0.000000 * fixp_exponent)],
-			[(short)(1.796875 * fixp_exponent), (short)(-0.812500 * fixp_exponent)],
-			[(short)(1.531250 * fixp_exponent), (short)(-0.859375 * fixp_exponent)],
-		];
-		public static short[][] ea_adpcm_table_v3 =
-		[
-			[(short)(0.000000 * fixp_exponent), (short)(0.000000 * fixp_exponent)],
-			[(short)(0.000000 * fixp_exponent), (short)(0.937500 * fixp_exponent)],
-			[(short)(-0.812500 * fixp_exponent), (short)(1.796875 * fixp_exponent)],
-			[(short)(-0.859375 * fixp_exponent), (short)(1.531250 * fixp_exponent)]
-		];
-		public static int[] ea_adpcm_table_v4 =[0,240,460,392];
-		public static int[] const_shift = [16 - fixed_point_offset, 16 - fixed_point_offset , 16 - fixed_point_offset , 16 - fixed_point_offset];
-		public static byte[] shuffle = [12, 8, 4, 0,   13, 9, 5, 1,   14, 10, 6, 2,    15, 11, 7, 3];
+		public static short[][] ea_adpcm_table_v2 = new short[][]{
+			new short[]{ (short)(0.000000 * fixp_exponent), (short)(0.000000 * fixp_exponent) },
+			new short[]{ (short)(0.937500 * fixp_exponent), (short)(0.000000 * fixp_exponent) },
+			new short[]{ (short)(1.796875 * fixp_exponent), (short)(-0.812500 * fixp_exponent) },
+			new short[]{ (short)(1.531250 * fixp_exponent), (short)(-0.859375 * fixp_exponent)},
+		};
+		public static short[][] ea_adpcm_table_v3 = new short[][]
+		{
+			new short[] { (short)(0.000000 * fixp_exponent), (short)(0.000000 * fixp_exponent) },
+			new short[]{(short)(0.000000 * fixp_exponent), (short)(0.937500 * fixp_exponent)},
+		    new short[]{(short)(-0.812500 * fixp_exponent), (short)(1.796875 * fixp_exponent)},
+		    new short[]{(short)(-0.859375 * fixp_exponent), (short)(1.531250 * fixp_exponent)}
+		};
+		public static int[] ea_adpcm_table_v4 =new int[] { 0, 240, 460, 392 };
+		public static int[] const_shift = new int[] { 16 - fixed_point_offset, 16 - fixed_point_offset, 16 - fixed_point_offset, 16 - fixed_point_offset };
+		public static byte[] shuffle = new byte[] { 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3 };
 		public static int Clip_int16(int val)
 		{
 			return (val >= 0x7FFF) ? 0x7FFF : (val <= -0x8000) ? -0x8000 : val;

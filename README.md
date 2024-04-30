@@ -20,7 +20,7 @@ I compiled it using VS2022
 
 Release version requires `Net8` environment
 
-If you need to be compatible with lower versions, please open your compilation software and delete the section about SIMD, then make slight modifications (mainly using the Net8 writing method for a small part, which is more convenient). You need to change it to consider it as a writing method below Net8 (Don't worry, it's very simple. You just need to change `[]` back to `new <T>[]{}`)
+If you want to be compatible with Net6, please do not consider SIMD
 
 ### Demo
 
