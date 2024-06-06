@@ -10,9 +10,7 @@ It allows decoding/encoding between PCM and EA-ADPCM-XAS
 
 - [x] Decoded
 
-### Source
-
-Original project:[GitHub - CrabJournal/EA-ADPCM-Codec](https://github.com/CrabJournal/EA-ADPCM-Codec)
+# 
 
 ### Compile
 
