@@ -5,9 +5,14 @@ namespace EA_ADPCM_XAS_CSharp.Decode
 	internal class DecodeFunction
 	{
 		static short decode_XA_sample(short prev_samples0, short prev_samples1, short[] coef, int int4, byte shift)
+		{	int correction = int4 << shift;
+			int prediction = prev_samples1 * coef[0] + prev_samples0 * coef[1];
+			return ClipToInt16((prediction + correction + def_rounding) >> fixed_point_offset);
+		}
+		static short decode_XA_sample(short[] prev_samples, short[] coef, int int4, byte shift)
 		{
 			int correction = int4 << shift;
-			int prediction = prev_samples1 * coef[0] + prev_samples0 * coef[1];
+			int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
 			return ClipToInt16((prediction + correction + def_rounding) >> fixed_point_offset);
 		}
 
@@ -86,19 +91,19 @@ namespace EA_ADPCM_XAS_CSharp.Decode
 			int out_PCM_index = 0;
 		    int num_chunks = (int)((n_samples_per_channel + 27) / 28);
 	        for (int i = 0; i<num_chunks; i++) {
-		         long data_decoded_size = decode_EA_XA_R2_Chunk(ref data,ref data_index, out_PCM,out_PCM_index, prev_samples);
+		         long data_decoded_size = decode_EA_XA_R2_Chunk(ref data,ref data_index,ref out_PCM,out_PCM_index, prev_samples);
 	             data_index += data_decoded_size;
 		         out_PCM_index += samples_in_EA_XA_R_chunk;
 	        }
         }
-		static long decode_EA_XA_R2_Chunk(ref byte[] XA_Chunk,ref long p_curr_byte_index, short[] out_PCM/*[28]*/,long out_PCM_index, short[] prev_samples/*[3]*/)
+		static long decode_EA_XA_R2_Chunk(ref byte[] p_curr_byte/*XA_Chunk*/, ref long p_curr_byte_index,ref short[] pSample/*out_PCM [28]*/,long out_PCM_index, short[] prev_samples/*[3]*/)
 		{
-			byte[] p_curr_byte = XA_Chunk;
+			//byte[] p_curr_byte = XA_Chunk;
 			
-			short[] pSample = out_PCM;
+			//short[] pSample = out_PCM;
 			int pSample_index = (int)out_PCM_index;
-			byte _byte = p_curr_byte[p_curr_byte_index];
-			p_curr_byte_index++;
+			byte _byte = p_curr_byte[p_curr_byte_index++];
+			//p_curr_byte_index++;
 			short[] p_prev_samples = prev_samples;
 			if (_byte == 0xEE)
 			{

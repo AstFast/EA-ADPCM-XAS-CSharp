@@ -36,7 +36,7 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 	        }
             return data_index;
         }
-        void encode_EA_XA_R1_chunk(byte[/*sizeof_EA_XA_R1_chunk*/] data, short[/*28*/] PCM, short[] prev,  int nCannels) 
+        void encode_EA_XA_R1_chunk(ref byte[/*sizeof_EA_XA_R1_chunk*/] data, short[/*28*/] PCM, short[] prev,  int nCannels) 
 		{
 			byte[] temp = BitConverter.GetBytes(ToBigEndian16((ushort)prev[0]));
 			data[0] = temp[0];
