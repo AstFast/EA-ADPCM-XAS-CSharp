@@ -18,7 +18,9 @@ I compiled it using VS2022
 
 Release version requires `Net8` environment
 
-If you want to be compatible with Net6, please do not consider SIMD
+Compiling with `Net6` requires some changes
+
+Written in Csharp language, compiling it is very simple, I will no longer provide the compiled DLL
 
 ### Demo
 
@@ -61,9 +63,7 @@ Although not as fast as C++, the speed is still acceptable within a certain rang
 
 ### TODO:
 
-Optimize decoding code
-
-Provide faster decoding methods?
+~~Optimize decoding code~~
 
 more problems
 
