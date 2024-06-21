@@ -44,9 +44,7 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 			byte[] temp1 = BitConverter.GetBytes(ToBigEndian16((ushort)prev[1]));
 			data[2] = temp1[0];
 			data[3] = temp1[1];
-		    int coef_index = 0;
-		    byte shift = 0;
-		    simple_CalcCoefShift(PCM,0, prev, 28,ref coef_index,ref shift);
+		    simple_CalcCoefShift(PCM,0, prev, 28,out int coef_index,out byte shift);
 		    data[4] = (byte)(coef_index << 4 | shift);
 			short[] _prev = new short[2]/*[2]*/;
 			Buffer.BlockCopy(_prev,0, prev,0, 4);
@@ -55,9 +53,7 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 	    long encode_EA_XA_R2_chunk(ref byte[/*sizeof_uncompr_EA_XA_R23_block*/] data,int index, short[] PCM, short[] prev, int nCannels, short max_error) 
 		{
 			int data_index = index;
-            int coef_index = 0;
-		    byte shift = 0;
-		    int err = simple_CalcCoefShift(PCM,0, prev, 28, ref coef_index,ref shift);
+		    int err = simple_CalcCoefShift(PCM,0, prev, 28,out int coef_index,out byte shift);
             if (err > max_error)
 			{
                 encode_EA_XA_R2_chunk_nocompr(ref data, PCM, prev, nCannels);
@@ -140,7 +136,7 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 			}
 			return new EncodedSample { decoded = (Int16)decoded, encoded = (byte)res };
 		}
-		static int simple_CalcCoefShift(short[] pSamples,int index, short[] in_prevSamples, int num_samples,ref int out_coef_index,ref byte out_shift) {
+		static int simple_CalcCoefShift(short[] pSamples,int index, short[] in_prevSamples, int num_samples,out int out_coef_index,out byte out_shift) {
 			const int num_coefs = 4;
 			int min_max_error = int.MaxValue;
 			int s_min_max_error = int.MaxValue;
@@ -193,7 +189,7 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 				out_chunk.XAS_data[i] = new byte[4];
 			}
 			short[] decoded_PCM = new short[32];
-			for (int j = 0; j < 4; j++)
+			for (int j = 0; j < subchunks_in_XAS_chunk; j++)
 			{
 				short[] pInSamples = new short[32];
 				for (int i = 0; i < 32; i++)
@@ -206,9 +202,7 @@ namespace EA_ADPCM_XAS_CSharp.Encode
 				
 				decoded_PCM[0] = (short)(out_chunk.headers[j].sample_0 << 4);
 				decoded_PCM[1] = (short)(out_chunk.headers[j].sample_1 << 4);
-				int coef_index = 0;
-				byte shift = 0;
-				simple_CalcCoefShift(pInSamples, 2, decoded_PCM, 30,ref coef_index,ref shift);
+				simple_CalcCoefShift(pInSamples, 2, decoded_PCM, 30,out int coef_index,out byte shift);
 				out_chunk.headers[j].coef_index = (uint)coef_index;
 				out_chunk.headers[j].exp_shift = shift;
 				short[] coef = ea_adpcm_table_v2[coef_index];

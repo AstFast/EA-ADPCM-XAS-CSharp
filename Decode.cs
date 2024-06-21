@@ -28,7 +28,7 @@ namespace EA_ADPCM_XAS_CSharp.Decode
 		}
 		unsafe void decode_XAS_Chunk(XAS_Chunk in_chunk,ref short[] pSamples)
 		{
-			for (int j = 0; j < 4; j++)
+			for (int j = 0; j < subchunks_in_XAS_chunk; j++)
 			{
 				int pSamples_index = j*32;
 				pSamples[0 + pSamples_index] = (short)(in_chunk.headers[j].sample_0 << 4);

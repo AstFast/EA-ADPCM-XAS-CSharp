@@ -1,7 +1,5 @@
 ﻿using EA_ADPCM_XAS_CSharp.Decode;
 using EA_ADPCM_XAS_CSharp.Encode;
-using System;
-using System.Numerics;
 namespace EA_ADPCM_XAS_CSharp
 {
 	public class DecodeXAS
