@@ -284,7 +284,7 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 			return data_index;
 		}
-		public long encode_EA_XA_R2(ref byte[] data, short[] PCM, uint n_samples_per_channel, uint n_channels, short max_error)
+		public static long encode_EA_XA_R2(ref byte[] data, short[] PCM, uint n_samples_per_channel, uint n_channels, short max_error)
 		{
 			long data_index = 0;
 			for (int chan_ind = 0; chan_ind < n_channels; chan_ind++)

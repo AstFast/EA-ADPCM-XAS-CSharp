@@ -1,13 +1,15 @@
 ﻿using decodeXAS = EA_ADPCM_XAS_CSharp.Decode;
 using encodeXAS = EA_ADPCM_XAS_CSharp.Encode;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
-using System.Collections;
 
 namespace EA_ADPCM_XAS_CSharp
 {
 	public class DecodeXAS
 	{
-		
+		public static void Decode_EA_XA_R2(byte[] data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
+		{
+			decodeXAS.decode_EA_XA_R2(ref data, ref out_PCM, n_samples_per_channel, n_channels);
+		}
 		public static byte[] Decode(byte[] bytes, uint channels)
 		{
 			List<byte> data = new List<byte>();
@@ -168,6 +170,14 @@ namespace EA_ADPCM_XAS_CSharp
 				}
 			}
 			return bytes.ToArray();
+		}
+		public static void Encode_EA_XA_R1_chunk(ref byte[] data, short[] PCM, short[] prev, int nCannels)
+		{
+			encodeXAS.encode_EA_XA_R1_chunk(ref data, PCM, prev, nCannels);
+		}
+		public long Encode_EA_XA_R2(ref byte[] data, short[] PCM, uint n_samples_per_channel, uint n_channels, short max_error)
+		{
+			return encodeXAS.encode_EA_XA_R2(ref data, PCM, n_samples_per_channel, n_channels, max_error);
 		}
 	}
 	internal static class XASStruct
