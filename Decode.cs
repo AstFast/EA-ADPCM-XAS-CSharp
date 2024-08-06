@@ -108,13 +108,13 @@ namespace EA_ADPCM_XAS_CSharp.Decode
 			if (_byte == 0xEE)
 			{
 
-				prev_samples[1] = Get_s16be(p_curr_byte);
+				prev_samples[1] = Get_s16be(p_curr_byte,(int)p_curr_byte_index);
 				p_curr_byte_index += 2;
-				prev_samples[0] = Get_s16be(p_curr_byte);
+				prev_samples[0] = Get_s16be(p_curr_byte,(int)p_curr_byte_index);
 				p_curr_byte_index += 2;
 				for (int i = 0; i < samples_in_EA_XA_R_chunk; i++)
 				{
-					pSample[pSample_index++] = Get_s16be(p_curr_byte);
+					pSample[pSample_index++] = Get_s16be(p_curr_byte, (int)p_curr_byte_index);
 					p_curr_byte_index += 2;
 				}
 			}
@@ -174,7 +174,7 @@ namespace EA_ADPCM_XAS_CSharp.Decode
 	}
 	internal static class DecodeCode
 	{
-		
+
 		public static byte[] Decode(byte[] bytes, uint channels)
 		{
 			List<byte> data = new List<byte>();
@@ -182,20 +182,20 @@ namespace EA_ADPCM_XAS_CSharp.Decode
 			short[] array2 = new short[1024];
 			int[] array3 = new int[32];
 			int array_index = 0;
-			int[] array4 =
-			[
+			int[] array4 = new int[]
+			{
 				0,
 				240,
 				460,
 				392
-			];
-			int[] array5 =
-			[
+			};
+			int[] array5 = new int[]
+			{
 				0,
 				0,
 				-208,
 				-220
-			];
+			};
 			int count = (int)((bytes.Length / 76) / channels);
 			int num9 = (bytes.Length / 76) * 128;
 			for (int i = 0; i < count; i++)

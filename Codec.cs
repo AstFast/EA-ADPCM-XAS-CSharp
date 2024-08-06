@@ -175,9 +175,9 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			return (short)ToBigEndian16((ushort)System.Runtime.InteropServices.Marshal.ReadInt16(ptr));
 		}
-		public static short Get_s16be(byte[] byteArray)
+		public static short Get_s16be(byte[] byteArray,int start_index = 0)
 		{
-			return BitConverter.ToInt16(byteArray, 0);
+			return BitConverter.ToInt16(byteArray, start_index);
 		}
 		
 		public static ushort ToBigEndian16(ushort value)
