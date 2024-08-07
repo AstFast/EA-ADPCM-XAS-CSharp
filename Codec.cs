@@ -171,10 +171,6 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 			return bytes.ToArray();
 		}
-		public static void Encode_EA_XA_R1_chunk(ref byte[] data, short[] PCM, short[] prev, int nCannels)
-		{
-			encodeXAS.encode_EA_XA_R1_chunk(ref data, PCM, prev, nCannels);
-		}
 		public long Encode_EA_XA_R2(ref byte[] data, short[] PCM, uint n_samples_per_channel, uint n_channels, short max_error)
 		{
 			return encodeXAS.encode_EA_XA_R2(ref data, PCM, n_samples_per_channel, n_channels, max_error);
