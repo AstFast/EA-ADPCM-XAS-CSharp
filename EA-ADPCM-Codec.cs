@@ -22,63 +22,6 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 		}
 		
-		static short decode_XA_sample(short[] prev_samples, short[] coef, int int4, byte shift)
-		{
-			int correction = int4 << shift;
-			int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
-			return ClipToInt16((prediction + correction + def_rounding) >> fixed_point_offset);
-		}
-		static long decode_EA_XA_R2_Chunk(ref byte[] p_curr_byte, ref long p_curr_byte_index, ref short[] pSample, long out_PCM_index, short[] prev_samples)
-		{
-			int pSample_index = (int)out_PCM_index;
-			byte _byte = p_curr_byte[p_curr_byte_index++];
-			short[] p_prev_samples = prev_samples;
-			if (_byte == 0xEE)
-			{
-
-				prev_samples[1] = Get_s16be(p_curr_byte,(int)p_curr_byte_index);
-				p_curr_byte_index += 2;
-				prev_samples[0] = Get_s16be(p_curr_byte,(int)p_curr_byte_index);
-				p_curr_byte_index += 2;
-				for (int i = 0; i < samples_in_EA_XA_R_chunk; i++)
-				{
-					pSample[pSample_index++] = Get_s16be(p_curr_byte,(int)p_curr_byte_index);
-					p_curr_byte_index += 2;
-				}
-			}
-			else
-			{
-				int coef_index = _byte >> 4;
-				short[] coef = ea_adpcm_table_v2[coef_index];
-				byte shift = (byte)(12 + fixed_point_offset - (_byte & 0xF));
-				for (int j = 0; j < samples_in_EA_XA_R_chunk / 2; j++)
-				{
-					SamplesByte data = (sbyte)(p_curr_byte[p_curr_byte_index]);
-					p_curr_byte_index++;
-					pSample[0] = decode_XA_sample(p_prev_samples, coef, data.sample0, shift);
-					prev_samples[2] = pSample[0];
-					pSample[1] = decode_XA_sample(p_prev_samples, coef, data.sample1, shift);
-					p_prev_samples = pSample;
-					pSample_index += 2;
-				}
-				prev_samples[1] = pSample[-1];
-				prev_samples[0] = pSample[-2];
-			}
-			return p_curr_byte_index;
-		}
-		public static void decode_EA_XA_R2(ref byte[] data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
-		{
-			short[] prev_samples = new short[3] { 0, 0, 0 };
-			long data_index = 0;
-			int out_PCM_index = 0;
-			int num_chunks = (int)((n_samples_per_channel + 27) / 28);
-			for (int i = 0; i < num_chunks; i++)
-			{
-				long data_decoded_size = decode_EA_XA_R2_Chunk(ref data, ref data_index, ref out_PCM, out_PCM_index, prev_samples);
-				data_index += data_decoded_size;
-				out_PCM_index += samples_in_EA_XA_R_chunk;
-			}
-		}
 		public static void decode_XAS(XAS_Chunk[] _in_data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
 		{
 			if (n_samples_per_channel == 0)

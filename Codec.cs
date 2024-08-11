@@ -6,10 +6,6 @@ namespace EA_ADPCM_XAS_CSharp
 {
 	public class DecodeXAS
 	{
-		public static void Decode_EA_XA_R2(byte[] data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
-		{
-			decodeXAS.decode_EA_XA_R2(ref data, ref out_PCM, n_samples_per_channel, n_channels);
-		}
 		public static byte[] Decode(byte[] bytes, uint channels)
 		{
 			List<byte> data = new List<byte>();
@@ -324,7 +320,6 @@ namespace EA_ADPCM_XAS_CSharp
 
 		public static short ToBigEndian16(short val)
 		{
-			//return System.Net.IPAddress.HostToNetworkOrder(val);
 			return (short)(((val & 0xFF00) >> 8) | ((val & 0x00FF) << 8));
 		}
 	}
