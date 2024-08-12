@@ -1,5 +1,4 @@
-﻿using decodeXAS = EA_ADPCM_XAS_CSharp.Decode;
-using encodeXAS = EA_ADPCM_XAS_CSharp.Encode;
+﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 
 namespace EA_ADPCM_XAS_CSharp
@@ -49,30 +48,14 @@ namespace EA_ADPCM_XAS_CSharp
 								num16 -= 16;
 							}
 							int num17 = array3[l - 1] * array4[num14] + array3[l - 2] * array5[num14];
-							array3[l] = num17 + (num16 << 20 - num15) + 128 >> 8;
-							if (array3[l] > 32767)
-							{
-								array3[l] = 32767;
-							}
-							else if (array3[l] < -32768)
-							{
-								array3[l] = -32768;
-							}
+							array3[l] = Clip_int16(num17 + (num16 << 20 - num15) + 128 >> 8);
 							num16 = (int)(array[12 + k + l * 2] & 15);
 							if (num16 > 7)
 							{
 								num16 -= 16;
 							}
 							num17 = array3[l] * array4[num14] + array3[l - 1] * array5[num14];
-							array3[l + 1] = num17 + (num16 << 20 - num15) + 128 >> 8;
-							if (array3[l + 1] > 32767)
-							{
-								array3[l + 1] = 32767;
-							}
-							else if (array3[l + 1] < -32768)
-							{
-								array3[l + 1] = -32768;
-							}
+							array3[l + 1] = Clip_int16(num17 + (num16 << 20 - num15) + 128 >> 8);
 						}
 						for (int m = 0; m < 32; m++)
 						{
@@ -127,7 +110,7 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 			uint n_total_samples = (uint)((in_data.Length / 76) * 128);
 			short[] PCM_data = new short[2 * n_total_samples];
-			decodeXAS.decode_XAS(xas, ref PCM_data, n_total_samples / channels, channels);
+			EA.XAS.decode_XAS_v1(xas, ref PCM_data, n_total_samples / channels, channels);
 			return XASStruct.ShortArrayToByteArray(PCM_data);
 		}
 
@@ -144,7 +127,7 @@ namespace EA_ADPCM_XAS_CSharp
 			XAS_Chunk[] out_data = new XAS_Chunk[encode_size / 76];
 			short[] shorts = new short[rawdata.Length/2];
 			Buffer.BlockCopy(rawdata, 0, shorts, 0, rawdata.Length);
-			encodeXAS.encode_XAS(ref out_data, shorts, n_samples_per_channel, channels);
+			EA.XAS.encode_XAS_v1(ref out_data, shorts, n_samples_per_channel, channels);
 			List<byte> bytes = new List<byte>();
 			foreach (var item in out_data)
 			{
@@ -174,6 +157,19 @@ namespace EA_ADPCM_XAS_CSharp
 		public const int shift4_rounding = 0x8 - 1;
 		public const int fixp_exponent = 1 << fixed_point_offset;
 		public const int def_rounding = (fixp_exponent >> 1);
+	 	public static int[] XATable ={
+	        0, 240,  460,  392,
+	        0,   0, -208, -220,
+	        0,   1,    3,    4,
+	        7,   8,   10,   11,
+	        0,  -1,   -3,   -4
+		};
+		public static float[][] ea_adpcm_table_xas_v0 = new float[][]{
+            new float[]{ 0.0F,0.0F},
+            new float[]{ 0.9375F,0.0F},
+            new float[]{ 1.796875F, -0.8125F},
+            new float[]{ 1.53125F, -0.859375F},
+        };
 		public static short[][] ea_adpcm_table_v2 = new short[][]{
 			new short[]{ (short)(0.000000 * fixp_exponent), (short)(0.000000 * fixp_exponent) },
 			new short[]{ (short)(0.937500 * fixp_exponent), (short)(0.000000 * fixp_exponent) },
@@ -296,6 +292,7 @@ namespace EA_ADPCM_XAS_CSharp
 			public XAS_SubChunkHeader[] headers;
 			public byte[][] XAS_data;
 		}
+		
 		public static int bytestream2_get_bytes(ref byte[] ptr)
 		{
 			int val = ptr[0];
