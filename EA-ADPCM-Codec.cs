@@ -1,73 +1,11 @@
-﻿/*reference:
- * EA-ADPCM-XAS:https://github.com/CrabJournal/EA-ADPCM-Codec
- * EA-ADPCM(Maxis XA):https://simstek.fandom.com/wiki/XA
- * 
- * Other:
- * https://ffmpeg.org/doxygen/trunk/adpcm_8c.html
- * https://github.com/vgmstream/vgmstream/blob/master/src/coding/ea_xa_decoder.c
- */
-using System;
-using static EA_ADPCM_XAS_CSharp.XASStruct;
+﻿using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
 {
-	internal class EAAudio
+	internal unsafe class EAAudio
 	{
-		public class XA
+        public class XAS
 		{
-			private class Channel
-			{
-				public short PrevSample { get; set; }
-				public short CurSample { get; set; }
-				public int Divisor { get; set; }
-				public int C1 { get; set; }
-				public int C2 { get; set; }
-			}
-			public static void decode_Maxis_XA(byte[] inBuffer, int blockCount, short[] outBuffer, int channels)
-			{
-				var channel = new Channel[channels];
-				for (int i = 0; i < channels; i++)
-				{
-					channel[i] = new Channel();
-				}
-
-				int inIndex = 0;
-				int outIndex = 0;
-
-				while (blockCount-- > 0)
-				{
-					for (int i = 0; i < channels; i++)
-					{
-						byte currentByte = inBuffer[inIndex++];
-						channel[i].Divisor = (currentByte & 0x0F) + 8;
-						channel[i].C1 = XASStruct.XATable[currentByte>>4];
-						channel[i].C2 = XASStruct.XATable[(currentByte >> 4) + 4];
-					}
-
-					for (int i = 0; i < 14; i++)
-					{
-						for (int j = 0; j < channels; j++)
-						{
-							byte currentByte = inBuffer[inIndex++];
-							for (int n = 0; n < 2; n++)
-							{
-								int newValue = (n == 0) ? (currentByte>>4) : (currentByte & 0x0F);
-								newValue = (newValue << 28) >> channel[j].Divisor;
-								newValue = (newValue + channel[j].CurSample * channel[j].C1 + channel[j].PrevSample * channel[j].C2 + 128) >> 8;
-								channel[j].PrevSample = channel[j].CurSample;
-								channel[j].CurSample = (short)Clip_int16(newValue);
-							}
-							outBuffer[outIndex++] = channel[j].PrevSample;
-						}
-						for (int j = 0; j < channels; j++)
-						{
-							outBuffer[outIndex++] = channel[j].CurSample;
-						}
-					}
-				}
-			}
-		}
-		public class XAS
-		{
+			#region XAS v1
 			static void _memset(ref short[] destination, uint index, byte value, uint size)
 			{
 				for (int i = 0; i < size; i++)
@@ -268,55 +206,7 @@ namespace EA_ADPCM_XAS_CSharp
 					}
 				}
 			}
-			public static void decode_XAS_v0(Stream stream, short[] outbuf, int channelspacing, int firstSample, int samplesToDo)
-			{
-				byte[] frame = new byte[0x13];
-				int framesIn, samplesDone = 0, sampleCount = 0;
-				int bytesPerFrame = 0x02 + 0x02 + 0x0f;
-				int samplesPerFrame = 1 + 1 + 0x0f * 2;
-				framesIn = firstSample / samplesPerFrame;
-				firstSample = firstSample % samplesPerFrame;
-				long frameOffset = stream.Position + bytesPerFrame * framesIn;
-				stream.Seek(frameOffset, SeekOrigin.Begin);
-				stream.Read(frame, 0, bytesPerFrame);
-				{
-					short[] hists = new short[2];
-					uint frameHeader = BitConverter.ToUInt32(frame, 0);
-					float[] coef = XASStruct.ea_adpcm_table_xas_v0[frameHeader & 0x0F];
-					hists[1] = (short)((frameHeader >> 0) & 0xFFF0);
-					hists[0] = (short)((frameHeader >> 16) & 0xFFF0);
-					byte shift = (byte)((frameHeader >> 16) & 0x0F);
-					if (sampleCount >= firstSample && samplesDone < samplesToDo)
-					{
-						outbuf[samplesDone * channelspacing] = hists[1];
-						samplesDone++;
-					}
-					sampleCount++;
-					if (sampleCount >= firstSample && samplesDone < samplesToDo)
-					{
-						outbuf[samplesDone * channelspacing] = hists[0];
-						samplesDone++;
-					}
-					sampleCount++;
-					for (int i = 0; i < 0x0f * 2; i++)
-					{
-						byte nibbles = frame[0x02 + 0x02 + i / 2];
-						int sample = (i & 1) != 0?(nibbles >> 0) & 0x0F :(nibbles >> 4) & 0x0F;
-						sample = (short)(sample << 12) >> shift;
-						sample = (int)(sample + hists[0] * coef[0] + hists[1] * coef[1]);
-						sample = XASStruct.Clip_int16(sample);
-						if (sampleCount >= firstSample && samplesDone < samplesToDo)
-						{
-							outbuf[samplesDone * channelspacing] = (short)sample;
-							samplesDone++;
-						}
-						sampleCount++;
-						hists[1] = hists[0];
-						hists[0] = (short)sample;
-					}
-				}
-			}
-
+			#endregion
 		}
 
 	}
