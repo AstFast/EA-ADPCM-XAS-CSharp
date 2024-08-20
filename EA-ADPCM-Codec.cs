@@ -1,10 +1,79 @@
-﻿using static EA_ADPCM_XAS_CSharp.XASStruct;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
 {
 	internal unsafe class EAAudio
 	{
+
         public class XAS
 		{
+			#region XAS v0
+			static void decode_XAS_chunk_v0(void* in_data,short[]* PCM,uint n_channels)
+			{
+				int samples_done = 0;
+				byte[]* _in_data = (byte[]*)in_data;
+				uint frame_header = get_u32le(*_in_data);
+				float[] coef = ea_adpcm_table_xas_v0[frame_header & 0x0F];
+				short[] hist = new short[2];
+				hist[0] = (short)((frame_header >> 0) & 0xFFF0);
+				hist[1] = (short)((frame_header >> 16) & 0xFFF0);
+				byte shift = (byte)((frame_header >> 16) & 0x0F);
+                for (int i = 0; i < 2; i++)
+                {
+					(*PCM)[samples_done * n_channels] = hist[0];
+					samples_done+=2;
+				}
+
+				for (int i = 0; i < samples_in_XAS_subchunk; i++)
+				{
+					byte nibbles = (*_in_data)[0x02 + 0x02 + i / 2];
+					int sample;
+					sample = (i & 1) != 0 ?
+							(nibbles >> 0) & 0x0f :
+							(nibbles >> 4) & 0x0f;
+					sample = (short)(sample << 12) >> shift;
+					sample = sample + (int)(hist[1] * coef[0] + hist[0] * coef[1]);
+					sample = Clip_int16(sample);
+					(*PCM)[samples_done * n_channels] = (short)sample;
+					samples_done+=2;
+					hist[0] = hist[1];
+					hist[1] = (short)sample;
+				}
+			}
+			public static long decode_XAS_v0(void* in_data,ref short[] out_PCM,uint n_samples_per_channel, uint n_channels)
+			{
+				byte[]* _in_data = (byte[]*)in_data;
+				long out_PCM_index = 0;
+				IntPtr ptr = Marshal.AllocHGlobal(samples_in_XAS_per_subchunk * sizeof(short));//seem XA is 28
+				long n_chunks_per_channel = (n_samples_per_channel + (sizeof_EA_XA_R1_chunk - 1)) / sizeof_EA_XA_R1_chunk;
+				for (int r = 0;r < n_chunks_per_channel-1;r++)
+                {
+					for (int j = 0; j < n_channels; j++)
+					{
+						decode_XAS_chunk_v0(_in_data, (short[]*)ptr.ToPointer(),n_channels);
+						_in_data += sizeof_EA_XA_R1_chunk;
+                        for (int i = 0; i < sizeof_EA_XA_R1_chunk; i++)
+						{
+							out_PCM[out_PCM_index + j + i * n_channels] = Marshal.ReadInt16(ptr,i * sizeof(short));
+						}
+                    }
+					out_PCM_index += sizeof_EA_XA_R1_chunk * n_channels;
+				}
+				long samples_remain_per_channel = n_samples_per_channel - (n_chunks_per_channel - 1) * sizeof_EA_XA_R1_chunk;
+				for (int i = 0; i < n_channels; i++)
+                {
+					decode_XAS_chunk_v0(_in_data, (short[]*)ptr.ToPointer(), n_channels);
+                    for (int j = 0; j < samples_remain_per_channel; j++)
+                    {
+						out_PCM[out_PCM_index + i + j * n_channels] = Marshal.ReadInt16(ptr, i * sizeof(short));
+					}
+                }
+				Marshal.FreeHGlobal(ptr);
+				return _in_data - (byte[]*)in_data;
+			}
+			#endregion
 			#region XAS v1
 			static void _memset(ref short[] destination, uint index, byte value, uint size)
 			{
@@ -172,14 +241,35 @@ namespace EA_ADPCM_XAS_CSharp
 					index++;
 				}
 			}
-			public static void decode_XAS_v1(XAS_Chunk[] _in_data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
+			public static void decode_XAS_v1(void* in_data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
 			{
 				if (n_samples_per_channel == 0)
 				{
 					return;
 				}
-				int _in_data_index = 0;
-				int out_PCM_Offest = 0;
+				byte[]* _data = (byte[]*)in_data;
+				uint encode_size = GetXASEncodedSize(n_samples_per_channel, n_channels);
+				XAS_Chunk[] _in_data = new XAS_Chunk[encode_size / 76];
+                for (int i = 0; i < _in_data.Length; i++)
+                {
+					_in_data[i].headers = new XAS_SubChunkHeader[subchunks_in_XAS_chunk];
+					_in_data[i].XAS_data = new byte[15][];
+                    for (int j = 0; j < 4; j++)
+                    {
+						_in_data[i].headers[j].data = *(uint*)_data;
+						_data += 4;
+					}
+                    for (int j = 0; j < 15; j++)
+                    {
+						_in_data[i].XAS_data[j] = new byte[subchunks_in_XAS_chunk];
+                        for (int k = 0; k < subchunks_in_XAS_chunk; k++)
+                        {
+							_in_data[i].XAS_data[j][k] = (*_data)[0];
+							_data++;
+						}
+                    }
+                }
+                int _in_data_index = 0,out_PCM_Offest = 0;
 				short[] PCM = new short[128];
 				uint n_chunks_per_channel = _GetNumXASChunks(n_samples_per_channel);
 				for (int chunk_ind = 0; chunk_ind < n_chunks_per_channel - 1; chunk_ind++)

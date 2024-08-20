@@ -1,123 +1,125 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 using System;
+using System.Runtime.InteropServices;
 
 namespace EA_ADPCM_XAS_CSharp
 {
-	public class DecodeXAS
+	public unsafe static class EA_ADPCM
 	{
-		public static byte[] Decode(byte[] bytes, uint channels)
+		public class XA
 		{
-			List<byte> data = new List<byte>();
-			byte[] array = new byte[76];
-			short[] array2 = new short[1024];
-			int[] array3 = new int[32];
-			int array_index = 0;
-			int[] array4 = new int[]
+			
+		}
+		public class XAS
+		{
+			public static byte[] decode_XAS_v0(byte[] in_data, uint channels)
 			{
+				uint n_total_samples = (uint)((in_data.Length / sizeof_EA_XA_R1_chunk) * samples_in_XAS_per_subchunk);
+				short[] PCM_data = new short[sizeof(short) * n_total_samples];
+				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
+				IntPtr ptr = handle.AddrOfPinnedObject();
+				EA.XAS.decode_XAS_v0(ptr.ToPointer(), ref PCM_data, n_total_samples / channels, channels);
+				handle.Free();
+				byte[] out_data = new byte[sizeof(int) * n_total_samples];
+				Buffer.BlockCopy(in_data, 0, out_data, 0, out_data.Length);
+				return out_data;
+			}
+			public static byte[] decode_XAS_v1(byte[] in_data, uint channels)
+			{
+				uint n_total_samples = (uint)((in_data.Length / 76) * 128);
+				short[] PCM_data = new short[sizeof(short) * n_total_samples];
+				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
+				IntPtr ptr = handle.AddrOfPinnedObject();
+				EA.XAS.decode_XAS_v1(ptr.ToPointer(), ref PCM_data, n_total_samples / channels, channels);
+				handle.Free();
+				byte[] out_data = new byte[sizeof(int) * n_total_samples];
+				Buffer.BlockCopy(in_data, 0, out_data, 0, out_data.Length);
+				return out_data;
+			}
+			public static byte[] decode_XAS_v1_2(byte[] bytes, uint channels)
+			{
+				List<byte> data = new List<byte>();
+				byte[] array = new byte[76];
+				short[] array2 = new short[1024];
+				int[] array3 = new int[32];
+				int array_index = 0;
+				int[] array4 = new int[]
+				{
 				0,
 				240,
 				460,
 				392
-			};
-			int[] array5 = new int[]
-			{
+				};
+				int[] array5 = new int[]
+				{
 				0,
 				0,
 				-208,
 				-220
-			};
-			int count = (int)((bytes.Length / 76) / channels);
-			int num9 = (bytes.Length / 76) * 128;
-			for (int i = 0; i < count; i++)
-			{
-				for (int j = 0; j < channels; j++)
+				};
+				long count = (bytes.Length / 76) / channels;
+				int num9 = (bytes.Length / 76) * 128;
+				for (int i = 0; i < count; i++)
 				{
-					Array.Copy(bytes, array_index, array, 0, 76);
-					array_index += 76;
-					for (int k = 0; k < 4; k++)
+					for (int j = 0; j < channels; j++)
 					{
-						array3[0] = (int)((short)((int)(array[k * 4] & 240) | (int)array[k * 4 + 1] << 8));
-						array3[1] = (int)((short)((int)(array[k * 4 + 2] & 240) | (int)array[k * 4 + 3] << 8));
-						int num14 = (int)(array[k * 4] & 15);
-						int num15 = (int)(array[k * 4 + 2] & 15);
-						for (int l = 2; l < 32; l += 2)
+						Array.Copy(bytes, array_index, array, 0, 76);
+						array_index += 76;
+						for (int k = 0; k < 4; k++)
 						{
-							int num16 = (array[12 + k + l * 2] & 240) >> 4;
-							if (num16 > 7)
+							array3[0] = (short)((array[k * 4] & 240) | (array[k * 4 + 1] << 8));
+							array3[1] = (short)((array[k * 4 + 2] & 240) | array[k * 4 + 3] << 8);
+							int num14 = array[k * 4] & 15;
+							int num15 = array[k * 4 + 2] & 15;
+							for (int l = 2; l < 32; l += 2)
 							{
-								num16 -= 16;
+								int num16 = (array[12 + k + l * 2] & 240) >> 4;
+								if (num16 > 7)
+								{
+									num16 -= 16;
+								}
+								int num17 = array3[l - 1] * array4[num14] + array3[l - 2] * array5[num14];
+								array3[l] = Clip_int16(num17 + (num16 << 20 - num15) + 128 >> 8);
+								num16 = (int)(array[12 + k + l * 2] & 15);
+								if (num16 > 7)
+								{
+									num16 -= 16;
+								}
+								num17 = array3[l] * array4[num14] + array3[l - 1] * array5[num14];
+								array3[l + 1] = Clip_int16(num17 + (num16 << 20 - num15) + 128 >> 8);
 							}
-							int num17 = array3[l - 1] * array4[num14] + array3[l - 2] * array5[num14];
-							array3[l] = Clip_int16(num17 + (num16 << 20 - num15) + 128 >> 8);
-							num16 = (int)(array[12 + k + l * 2] & 15);
-							if (num16 > 7)
+							for (int m = 0; m < 32; m++)
 							{
-								num16 -= 16;
+								array2[(k * 32 + m) * channels + j] = (short)array3[m];
 							}
-							num17 = array3[l] * array4[num14] + array3[l - 1] * array5[num14];
-							array3[l + 1] = Clip_int16(num17 + (num16 << 20 - num15) + 128 >> 8);
-						}
-						for (int m = 0; m < 32; m++)
-						{
-							array2[(k * 32 + m) * channels + j] = (short)array3[m];
 						}
 					}
-				}
-				int num18;
-				if (num9 >= 128U)
-				{
-					num18 = 128;
-				}
-				else
-				{
-					num18 = (int)num9;
-				}
-				num9 -= 128;
-				for (int n = 0; n < num18 * channels; n++)
-				{
-					data.AddRange(BitConverter.GetBytes(array2[n]));
-				}
-
-			}
-			return data.ToArray();
-		}
-
-		public static byte[] DecodeSIMD(byte[] in_data, uint channels)
-		{
-			XAS_Chunk[] xas = new XAS_Chunk[in_data.Length / 76];
-			int index = 0;
-			for (int i = 0; i < in_data.Length / 76; i++)
-			{
-				xas[i].headers = new XAS_SubChunkHeader[4];
-				for (int j = 0; j < 4; j++)
-				{
-					xas[i].headers[j].data = (uint)BitConverter.ToInt32(in_data, index);
-					index += 4;
-				}
-				xas[i].XAS_data = new byte[15][];
-				for (int k = 0; k < 15; k++)
-				{
-					xas[i].XAS_data[k] = new byte[4];
-				}
-				for (int j = 0; j < 15; j++)
-				{
-					for (int k = 0; k < 4; k++)
+					int num18;
+					if (num9 >= 128U)
 					{
-						xas[i].XAS_data[j][k] = in_data[index];
-						index++;
+						num18 = 128;
 					}
-				}
-			}
-			uint n_total_samples = (uint)((in_data.Length / 76) * 128);
-			short[] PCM_data = new short[2 * n_total_samples];
-			EA.XAS.decode_XAS_v1(xas, ref PCM_data, n_total_samples / channels, channels);
-			return XASStruct.ShortArrayToByteArray(PCM_data);
-		}
+					else
+					{
+						num18 = (int)num9;
+					}
+					num9 -= 128;
+					for (int n = 0; n < num18 * channels; n++)
+					{
+						data.AddRange(BitConverter.GetBytes(array2[n]));
+					}
 
+				}
+				return data.ToArray();
+			}
+		}
+		
 	}
+	
 	public class EncodeXAS
 	{
+		
 		public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
 		{
 			return XASStruct.GetXASEncodedSize(n_samples_per_channel, n_channels);
@@ -256,7 +258,6 @@ namespace EA_ADPCM_XAS_CSharp
 		public struct XAS_SubChunkHeader
 		{
 			public uint data;
-
 			public uint coef_index
 			{
 				get { return (data & 0x3u); }
