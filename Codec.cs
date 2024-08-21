@@ -1,6 +1,5 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
-using System;
 using System.Runtime.InteropServices;
 
 namespace EA_ADPCM_XAS_CSharp
@@ -9,7 +8,18 @@ namespace EA_ADPCM_XAS_CSharp
 	{
 		public class XA
 		{
-			
+			public static byte[] decode_XA_v2(byte[] in_data,uint n_samples_per_channel, uint channels)
+			{
+				uint num_chunks = (n_samples_per_channel + (samples_in_EA_XA_R_chunk - 1)) / samples_in_EA_XA_R_chunk;
+				IntPtr optr = Marshal.AllocHGlobal((int)num_chunks * sizeof_uncompr_EA_XA_R23_block);
+				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
+				IntPtr ptr = handle.AddrOfPinnedObject();
+				EA.XA.decode_EA_XA_R2(ptr.ToPointer(), (short[]*)optr.ToPointer(), n_samples_per_channel, channels);
+				handle.Free();
+				byte[] Out_data = *(byte[]*)optr.ToPointer();
+				Marshal.FreeHGlobal(optr);
+				return Out_data;
+			}
 		}
 		public class XAS
 		{
