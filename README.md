@@ -4,68 +4,42 @@
 
 It allows decoding/encoding between PCM and EA-ADPCM-XAS
 
-### Functional support
+### Support
 
-- [x] Encoded
+| Name     | decode | function                       | encode | function      |
+| -------- | ------ | ------------------------------ | ------ | ------------- |
+| XA v1    | **✔️   | decode_XA_v1                   | ❌      |               |
+| XA v2    | *✔️    | decode_XA_v2                   | *✔️    | encode_XA_v2  |
+| Maxis XA | **✔️   | decode_maxis_xa                | ❌      |               |
+| XAS v0   | **✔️   | decode_XAS_v0                  | ❌      |               |
+| XAS v1   | ✔️     | decode_XAS_v1,decode_XAS_v1_s2 | ✔️     | encode_XAS_v1 |
 
-- [x] Decoded
+`*:Not tested`  `**Unable to pass the test, more information is needed`
 
-# 
-
-### Compile
-
-I compiled it using VS2022
-
-Release version requires `Net8` environment
-
-Compiling with `Net6` requires some changes
-
-Written in Csharp language, compiling it is very simple, I will no longer provide the compiled DLL
+ 
 
 ### Demo
 
 ```csharp
-//
-//Encode Mode
 //You need to prepare the following parameters.
-uint n_samples_per_channel;
+int n_samples_per_channel;
 uint channels;
 byte[] raw_data;//Raw data, required to be PCM (no other encoding)
 //Start
 using EA_ADPCM_XAS_CSharp;
-uint encoded_size = EncodeXAS.GetXASEncodedSize(n_samples_per_channel, channels);
-byte[] encoded_data = new byte[encoded_size];
-encoded_data = EncodeXAS.Encode(data, n_samples_per_channel,channels);
+//You need to obtain the true size after encoding, otherwise it will result in unnecessary 0x00
+byte[]encoded_data = EA_ADPCM.XAS.encode_XAS_v1(data, n_samples_per_channel,channels);
 //encoded_ data is the encoded data
 
-
-//Decode Mode
-uint channels;
-uint Sample;//it is writed in wav file
-byte[] raw;
-//I can only write this temporarily
-var decode_data = DecodeXAS.Decode(raw,channels);
-//This function is only intended to support lower versions
-//end
-//if you want get more quick decode you should use Using DecodeSIMD() function
-var decode_data = DecodeXAS.DecodeSIMD(raw,channels);
 ```
 
-### Problem
-
-##### Different after encoding and decoding
-
-ADPCM is a lossy encoding format, so the data decoded after encoding may be different from the original data
-
-##### Speed
-
-Although not as fast as C++, the speed is still acceptable within a certain range
+### 
 
 ### TODO:
 
-~~Optimize decoding code~~
+Revise XA
 
-more problems
+reduce losses
 
 ### Statement:
 
@@ -73,4 +47,4 @@ The decoding part used another person's code, but I don't know their name
 
 ### Credits
 
-[CrabJournal](https://github.com/CrabJournal/EA-ADPCM-Codec/commits?author=CrabJournal):[GitHub - CrabJournal/EA-ADPCM-Codec](https://github.com/CrabJournal/EA-ADPCM-Codec)
+CrabJournal:[GitHub - CrabJournal/EA-ADPCM-Codec](https://github.com/CrabJournal/EA-ADPCM-Codec)
