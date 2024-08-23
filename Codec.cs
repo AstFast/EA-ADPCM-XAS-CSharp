@@ -1,7 +1,6 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -38,7 +37,7 @@ namespace EA_ADPCM_XAS_CSharp
 			{
 				IntPtr optr = Marshal.AllocHGlobal(2);
 				short[] in_PCM = new short[data.Length / 2];
-				Buffer.BlockCopy(in_PCM, 0, data, 0, data.Length);
+				Buffer.BlockCopy(data, 0,in_PCM , 0, data.Length);
 				EA.XA.encode_EA_XA_R2(optr.ToPointer(),in_PCM,n_samples_per_channel,channels);
 				byte[] Out_data = *(byte[]*)optr.ToPointer();
 				Marshal.FreeHGlobal(optr);
