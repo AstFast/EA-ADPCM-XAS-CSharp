@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -10,6 +9,70 @@ namespace EA_ADPCM_XAS_CSharp
 		public class XA
 		{
 			#region XA v1
+			#region decode
+			static int adpcm_history1_32 = 0,adpcm_history2_32 = 0;
+			static void decode_XA_channel_v1(byte[]* data, short[]* PCM,int channelspacing, int channel,int num_chunk,bool is_stereo)
+			{
+				byte frame_info;
+				int shift;
+				int[] coef = new int[2];
+				bool hn = (channel == 0);
+				//int frame_samples = samples_in_EA_XA_R_chunk;
+				if (is_stereo)
+				{
+					frame_info = (*data)[0];
+					coef[0] = XATable[(hn ? frame_info >> 4 : frame_info & 0x0F) + 0];
+					coef[1] = XATable[(hn ? frame_info >> 4 : frame_info & 0x0F) + 4];
+
+					frame_info = (*(data+0x01))[0];
+					shift = (hn ? frame_info >> 4 : frame_info & 0x0F) + 8;
+				}
+				else
+				{
+					frame_info = (*data)[0];
+					coef[0] = XATable[(frame_info >> 4) + 0];
+					coef[1] = XATable[(frame_info >> 4) + 4];
+					shift = (frame_info & 0x0F) + 8;
+				}
+				for (int i = 0, sample_count = 0; i < num_chunk; i++, sample_count += channelspacing)
+				{
+					long byte_offset = is_stereo ? (0x02 + i) : (0x01 + i / 2);
+					int nibble_shift = is_stereo ? (hn ? 4 : 0) : ((!(i % 2 == 1)) ? 4 : 0);
+					byte sample_byte = (*(data+byte_offset))[0];
+					byte sample_nibble = (byte)((sample_byte >> nibble_shift) & 0x0F);
+					int new_sample = (sample_nibble << 28) >> shift;
+					new_sample = (new_sample + coef[0] * adpcm_history1_32 + coef[1] * adpcm_history2_32 + 128) >> 8;
+					new_sample = Clip_int16(new_sample);
+					(*PCM)[sample_count] = (short)new_sample;
+					adpcm_history2_32 = adpcm_history1_32;
+					adpcm_history1_32 = new_sample;
+				}
+			}
+			public static void decode_EA_XA_v1(void* data, short[]* PCM,int channels,int sample_to_do)
+			{
+				bool is_stereo = (channels > 1);
+				byte[]* _data = (byte[]*)data;
+				int frame_size = is_stereo ? 0x0f * 2 : 0x0f;
+				for (int ch = 0; ch < channels; ch++)
+				{
+					decode_XA_channel_v1(_data + ch, PCM + ch,channels, ch,sample_to_do, is_stereo);
+					_data += frame_size;
+				}
+			}
+			#endregion
+			#region encode
+			void encode_EA_XA_R1_chunk(byte[]* data/*sizeof_EA_XA_R1_chunk*/,short[]* PCM/*28*/, short[] prev,  int nCannels)
+			{
+                *(short*)data = ToBigEndian16(prev[0]);
+                *(short*)(data + 2) = ToBigEndian16(prev[1]);
+			    int coef_index;
+			    byte shift;
+			    simple_CalcCoefShift(PCM,ref prev, 28, &coef_index, &shift);
+			    (*data)[4] = (byte)(coef_index << 4 | shift);
+                short[] _prev =  prev;
+			    encode_EA_XA_block(data + 5, PCM,ref _prev, 28, nCannels, ea_adpcm_table_v2[coef_index], (byte)(12 + fixed_point_offset - shift));
+		    }
+			#endregion
 			#endregion
 			#region XA v2
 			#region decode

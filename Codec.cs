@@ -1,6 +1,7 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -8,6 +9,19 @@ namespace EA_ADPCM_XAS_CSharp
 	{
 		public class XA
 		{
+			public static byte[] decode_XA_v1(byte[] in_data, uint n_samples_per_channel, uint channels)
+			{
+				uint frame_size = (uint)((channels > 1) ? 0x0f * 2 : 0x0f);
+				int num_chunks = (int)((n_samples_per_channel + (frame_size - 1)) / frame_size);
+				IntPtr optr = Marshal.AllocHGlobal(num_chunks * samples_in_EA_XA_R_chunk);
+				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
+				IntPtr ptr = handle.AddrOfPinnedObject();
+				EA.XA.decode_EA_XA_v1(ptr.ToPointer(), (short[]*)optr.ToPointer(),(int)channels,num_chunks);
+				handle.Free();
+				byte[] Out_data = *(byte[]*)optr.ToPointer();
+				Marshal.FreeHGlobal(optr);
+				return Out_data;
+			}
 			public static byte[] decode_XA_v2(byte[] in_data,uint n_samples_per_channel, uint channels)
 			{
 				uint num_chunks = (n_samples_per_channel + (samples_in_EA_XA_R_chunk - 1)) / samples_in_EA_XA_R_chunk;
@@ -16,6 +30,16 @@ namespace EA_ADPCM_XAS_CSharp
 				IntPtr ptr = handle.AddrOfPinnedObject();
 				EA.XA.decode_EA_XA_R2(ptr.ToPointer(), (short[]*)optr.ToPointer(), n_samples_per_channel, channels);
 				handle.Free();
+				byte[] Out_data = *(byte[]*)optr.ToPointer();
+				Marshal.FreeHGlobal(optr);
+				return Out_data;
+			}
+			public static byte[] encode_XA_v2(byte[] data, uint n_samples_per_channel, uint channels)
+			{
+				IntPtr optr = Marshal.AllocHGlobal(2);
+				short[] in_PCM = new short[data.Length / 2];
+				Buffer.BlockCopy(in_PCM, 0, data, 0, data.Length);
+				EA.XA.encode_EA_XA_R2(optr.ToPointer(),in_PCM,n_samples_per_channel,channels);
 				byte[] Out_data = *(byte[]*)optr.ToPointer();
 				Marshal.FreeHGlobal(optr);
 				return Out_data;
@@ -123,46 +147,41 @@ namespace EA_ADPCM_XAS_CSharp
 				}
 				return data.ToArray();
 			}
-		}
-		
-	}
-	
-	public class EncodeXAS
-	{
-		
-		public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
-		{
-			return XASStruct.GetXASEncodedSize(n_samples_per_channel, n_channels);
-		}
-		public static byte[] Encode(byte[] rawdata, uint n_samples_per_channel, uint channels)
-		{
-			uint encode_size = GetXASEncodedSize(n_samples_per_channel, channels);
-			XAS_Chunk[] out_data = new XAS_Chunk[encode_size / 76];
-			short[] shorts = new short[rawdata.Length/2];
-			Buffer.BlockCopy(rawdata, 0, shorts, 0, rawdata.Length);
-			EA.XAS.encode_XAS_v1(ref out_data, shorts, n_samples_per_channel, channels);
-			List<byte> bytes = new List<byte>();
-			foreach (var item in out_data)
+			public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
 			{
-				foreach (var item1 in item.headers)
-				{
-					byte[] bytes1 = new byte[4];
-					bytes1 = BitConverter.GetBytes(item1.data);
-					for (int i = 0; i < bytes1.Length; i++)
-					{
-						bytes.Add(bytes1[i]);
-					}
-				}
-				foreach (var item1 in item.XAS_data)
-				{
-					foreach (var item2 in item1)
-					{
-						bytes.Add(item2);
-					}
-				}
+				return XASStruct.GetXASEncodedSize(n_samples_per_channel, n_channels);
 			}
-			return bytes.ToArray();
+			public static byte[] encode_XAS_v1(byte[] rawdata, uint n_samples_per_channel, uint channels)
+			{
+				uint encode_size = GetXASEncodedSize(n_samples_per_channel, channels);
+				XAS_Chunk[] out_data = new XAS_Chunk[encode_size / 76];
+				short[] shorts = new short[rawdata.Length / 2];
+				Buffer.BlockCopy(rawdata, 0, shorts, 0, rawdata.Length);
+				EA.XAS.encode_XAS_v1(ref out_data, shorts, n_samples_per_channel, channels);
+				List<byte> bytes = new List<byte>();
+				foreach (var item in out_data)
+				{
+					foreach (var item1 in item.headers)
+					{
+						byte[] bytes1 = new byte[4];
+						bytes1 = BitConverter.GetBytes(item1.data);
+						for (int i = 0; i < bytes1.Length; i++)
+						{
+							bytes.Add(bytes1[i]);
+						}
+					}
+					foreach (var item1 in item.XAS_data)
+					{
+						foreach (var item2 in item1)
+						{
+							bytes.Add(item2);
+						}
+					}
+				}
+				return bytes.ToArray();
+			}
 		}
+		
 	}
 	internal unsafe static class XASStruct
 	{
