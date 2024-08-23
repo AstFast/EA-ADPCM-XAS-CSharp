@@ -1,6 +1,9 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 using System.Runtime.InteropServices;
+using System;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Threading.Channels;
 
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -15,6 +18,8 @@ namespace EA_ADPCM_XAS_CSharp
 				IntPtr optr = Marshal.AllocHGlobal(num_chunks * samples_in_EA_XA_R_chunk);
 				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
 				IntPtr ptr = handle.AddrOfPinnedObject();
+				EA.XA.adpcm_history1_32 = 0;
+				EA.XA.adpcm_history2_32 = 0;
 				EA.XA.decode_EA_XA_v1(ptr.ToPointer(), (short[]*)optr.ToPointer(),(int)channels,num_chunks);
 				handle.Free();
 				byte[] Out_data = *(byte[]*)optr.ToPointer();
@@ -33,6 +38,19 @@ namespace EA_ADPCM_XAS_CSharp
 				Marshal.FreeHGlobal(optr);
 				return Out_data;
 			}
+			public static byte[] decode_maxis_xa(byte[] in_data, uint channels)
+			{
+				EA.XA.adpcm_history1_32 = 0;
+				EA.XA.adpcm_history2_32 = 0;
+				IntPtr optr = Marshal.AllocHGlobal((in_data.Length / 15) *samples_in_EA_XA_R_chunk);
+				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
+				IntPtr ptr = handle.AddrOfPinnedObject();
+				EA.XA.deocode_maxis_xa((byte[]*)optr.ToPointer(), (short[]*)ptr.ToPointer(),(int)channels);
+				handle.Free();
+				byte[] Out_data = *(byte[]*)optr.ToPointer();
+				Marshal.FreeHGlobal(optr);
+				return Out_data;
+			}
 			public static byte[] encode_XA_v2(byte[] data, uint n_samples_per_channel, uint channels)
 			{
 				IntPtr optr = Marshal.AllocHGlobal(2);
@@ -43,6 +61,7 @@ namespace EA_ADPCM_XAS_CSharp
 				Marshal.FreeHGlobal(optr);
 				return Out_data;
 			}
+
 		}
 		public class XAS
 		{
@@ -70,7 +89,7 @@ namespace EA_ADPCM_XAS_CSharp
 				Buffer.BlockCopy(in_data, 0, out_data, 0, out_data.Length);
 				return out_data;
 			}
-			public static byte[] decode_XAS_v1_2(byte[] bytes, uint channels)
+			public static byte[] decode_XAS_v1_s2(byte[] bytes, uint channels)
 			{
 				List<byte> data = new List<byte>();
 				byte[] array = new byte[76];
@@ -322,7 +341,12 @@ namespace EA_ADPCM_XAS_CSharp
 			public XAS_SubChunkHeader[] headers;
 			public byte[][] XAS_data;
 		}
-
+		public static int ea_xa_bytes_to_samples(int bytes, int channels)
+		{
+			if (channels <= 0) 
+			{ return 0;};
+			return bytes / channels / 0x0f * 28;
+		}
 		public static int bytestream2_get_bytes(ref byte[] ptr)
 		{
 			int val = ptr[0];

@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
@@ -10,14 +9,13 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			#region XA v1
 			#region decode
-			static int adpcm_history1_32 = 0,adpcm_history2_32 = 0;
+			public static int adpcm_history1_32 = 0,adpcm_history2_32 = 0;
 			static void decode_XA_channel_v1(byte[]* data, short[]* PCM,int channelspacing, int channel,int num_chunk,bool is_stereo)
 			{
 				byte frame_info;
 				int shift;
 				int[] coef = new int[2];
 				bool hn = (channel == 0);
-				//int frame_samples = samples_in_EA_XA_R_chunk;
 				if (is_stereo)
 				{
 					frame_info = (*data)[0];
@@ -293,6 +291,38 @@ namespace EA_ADPCM_XAS_CSharp
                 return curr_data - (byte[]*) data;
 	        }
 			#endregion
+			#endregion
+			#region Maxis XA
+			
+			static void deocode_maxis_xa_channel(byte[]* data, short[]* PCM,int channelspacing,int channel,int sample_to_do)
+			{
+				int frame_samples = 28;
+				byte frame_info = (*(data + channel))[0];
+				int[] coef = { XATable[(frame_info >> 4) + 0], XATable[(frame_info >> 4) + 4]};
+				byte shift = (byte)((frame_info & 0x0F) + 8);
+				for (int i = 0, sample_count = 0; i < sample_to_do; i++,sample_count+= channel)
+				{
+					long byte_offset = (0x01 * channelspacing + (channelspacing == 2 ? i / 2 + channel + (i / 2) * 0x01 : i / 2));
+					int nibble_shift = ((i & 1)==0) ? 4 : 0;
+					byte sample_byte = (*(data + byte_offset))[0];
+					byte sample_nibble = (byte)((sample_byte >> nibble_shift) & 0x0F);
+					int new_sample = (sample_nibble << 28) >> shift;
+					new_sample = (new_sample + coef[0] * adpcm_history1_32 + coef[1] * adpcm_history2_32 + 128) >> 8;
+					new_sample = Clip_int16(new_sample);
+
+					(*PCM)[sample_count] = (byte)new_sample;
+					adpcm_history2_32 = adpcm_history1_32;
+					adpcm_history1_32 = new_sample;
+				}
+			}
+			public static void deocode_maxis_xa(byte[]* data, short[]* PCM, int channels)
+			{
+                for (int i = 0; i < channels; i++)
+                {
+					deocode_maxis_xa_channel(data,PCM,channels,i, ea_xa_bytes_to_samples(data->Length,channels));
+					data += 0x0f * channels;
+				}
+            }
 			#endregion
 		}
 		public class XAS
