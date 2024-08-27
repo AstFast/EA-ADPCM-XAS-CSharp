@@ -1,9 +1,6 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 using System.Runtime.InteropServices;
-using System;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Threading.Channels;
 
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -48,6 +45,17 @@ namespace EA_ADPCM_XAS_CSharp
 				EA.XA.deocode_maxis_xa((byte[]*)optr.ToPointer(), (short[]*)ptr.ToPointer(),(int)channels);
 				handle.Free();
 				byte[] Out_data = *(byte[]*)optr.ToPointer();
+				Marshal.FreeHGlobal(optr);
+				return Out_data;
+			}
+			public static byte[] encode_XA_v1(byte[] data, uint n_samples_per_channel, uint channels)
+			{
+				IntPtr optr = Marshal.AllocHGlobal((data.Length / sizeof_EA_XA_R1_chunk) * samples_in_EA_XA_R_chunk);
+				GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+				IntPtr ptr = handle.AddrOfPinnedObject();
+				EA.XA.encode_EA_XA_R1(optr.ToPointer(), (short[]*)ptr.ToPointer(), (int)channels);
+				byte[] Out_data = *(byte[]*)optr.ToPointer();
+				handle.Free();
 				Marshal.FreeHGlobal(optr);
 				return Out_data;
 			}
