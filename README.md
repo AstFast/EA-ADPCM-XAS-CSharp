@@ -1,5 +1,7 @@
 # EA-ADPCM-XAS-CSharp
 
+<mark>This project will change to support multiple languages instead</mark>
+
 ### Content
 
 It allows decoding/encoding between PCM and EA-ADPCM-XAS
