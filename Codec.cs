@@ -1,103 +1,14 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
-using System.Runtime.InteropServices;
 
 namespace EA_ADPCM_XAS_CSharp
 {
 	public unsafe static class EA_ADPCM
 	{
-		public class XA
-		{
-			public static byte[] decode_XA_v1(byte[] in_data, uint n_samples_per_channel, uint channels)
-			{
-				uint frame_size = (uint)((channels > 1) ? 0x0f * 2 : 0x0f);
-				int num_chunks = (int)((n_samples_per_channel + (frame_size - 1)) / frame_size);
-				IntPtr optr = Marshal.AllocHGlobal(num_chunks * samples_in_EA_XA_R_chunk);
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XA.adpcm_history1_32 = 0;
-				EA.XA.adpcm_history2_32 = 0;
-				EA.XA.decode_EA_XA_v1(ptr.ToPointer(), (short[]*)optr.ToPointer(),(int)channels,num_chunks);
-				handle.Free();
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
-			}
-			public static byte[] decode_XA_v2(byte[] in_data,uint n_samples_per_channel, uint channels)
-			{
-				uint num_chunks = (n_samples_per_channel + (samples_in_EA_XA_R_chunk - 1)) / samples_in_EA_XA_R_chunk;
-				IntPtr optr = Marshal.AllocHGlobal((int)num_chunks * sizeof_uncompr_EA_XA_R23_block);
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XA.decode_EA_XA_R2(ptr.ToPointer(), (short[]*)optr.ToPointer(), n_samples_per_channel, channels);
-				handle.Free();
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
-			}
-			public static byte[] decode_maxis_xa(byte[] in_data, uint channels)
-			{
-				EA.XA.adpcm_history1_32 = 0;
-				EA.XA.adpcm_history2_32 = 0;
-				IntPtr optr = Marshal.AllocHGlobal((in_data.Length / 15) *samples_in_EA_XA_R_chunk);
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XA.deocode_maxis_xa((byte[]*)optr.ToPointer(), (short[]*)ptr.ToPointer(),(int)channels);
-				handle.Free();
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
-			}
-			public static byte[] encode_XA_v1(byte[] data, uint n_samples_per_channel, uint channels)
-			{
-				IntPtr optr = Marshal.AllocHGlobal((data.Length / sizeof_EA_XA_R1_chunk) * samples_in_EA_XA_R_chunk);
-				GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XA.encode_EA_XA_R1(optr.ToPointer(), (short[]*)ptr.ToPointer(), (int)channels);
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				handle.Free();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
-			}
-			public static byte[] encode_XA_v2(byte[] data, uint n_samples_per_channel, uint channels)
-			{
-				IntPtr optr = Marshal.AllocHGlobal(2);
-				short[] in_PCM = new short[data.Length / 2];
-				Buffer.BlockCopy(data, 0,in_PCM , 0, data.Length);
-				EA.XA.encode_EA_XA_R2(optr.ToPointer(),in_PCM,n_samples_per_channel,channels);
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
-			}
-
-		}
+		
 		public class XAS
 		{
-			public static byte[] decode_XAS_v0(byte[] in_data, uint channels)
-			{
-				uint n_total_samples = (uint)((in_data.Length / sizeof_EA_XA_R1_chunk) * samples_in_XAS_per_subchunk);
-				short[] PCM_data = new short[sizeof(short) * n_total_samples];
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XAS.decode_XAS_v0(ptr.ToPointer(), ref PCM_data, n_total_samples / channels, channels);
-				handle.Free();
-				byte[] out_data = new byte[sizeof(int) * n_total_samples];
-				Buffer.BlockCopy(in_data, 0, out_data, 0, out_data.Length);
-				return out_data;
-			}
-			public static byte[] decode_XAS_v1(byte[] in_data, uint channels)
-			{
-				uint n_total_samples = (uint)((in_data.Length / 76) * 128);
-				short[] PCM_data = new short[sizeof(short) * n_total_samples];
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XAS.decode_XAS_v1(ptr.ToPointer(), ref PCM_data, n_total_samples / channels, channels);
-				handle.Free();
-				byte[] out_data = new byte[sizeof(int) * n_total_samples];
-				Buffer.BlockCopy(in_data, 0, out_data, 0, out_data.Length);
-				return out_data;
-			}
-			public static byte[] decode_XAS_v1_s2(byte[] bytes, uint channels)
+			public static byte[] decode_XAS_v1(byte[] bytes, uint channels)
 			{
 				List<byte> data = new List<byte>();
 				byte[] array = new byte[76];
@@ -349,44 +260,6 @@ namespace EA_ADPCM_XAS_CSharp
 			public XAS_SubChunkHeader[] headers;
 			public byte[][] XAS_data;
 		}
-		public static int ea_xa_bytes_to_samples(int bytes, int channels)
-		{
-			if (channels <= 0) 
-			{ return 0;};
-			return bytes / channels / 0x0f * 28;
-		}
-		public static int bytestream2_get_bytes(ref byte[] ptr)
-		{
-			int val = ptr[0];
-			Array.Resize(ref ptr, ptr.Length - 1);
-			return val;
-		}
-		public static short bytestream2_get_le16s(ref byte[] ptr)
-		{
-			short val = BitConverter.ToInt16(ptr, 0);
-			Array.Resize(ref ptr, ptr.Length - 2);
-			return val;
-		}
-		public static int low_sNibble(int _byte)
-		{
-			return (int)((sbyte)((byte)_byte << 4) >> 4);
-		}
-
-		public static short Get_s16be(void* ptr)
-		{
-			return ToBigEndian16(*(short*)ptr);
-		}
-		public static uint get_u32le(byte[] p)
-		{
-			return (uint)get_s32le(p);
-		}
-		public static int get_s32le(byte[] p)
-		{
-			return (p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24));
-		}
-		public static short ToBigEndian16(short val)
-		{
-			return (short)(((val & 0xFF00) >> 8) | ((val & 0x00FF) << 8));
-		}
+		
 	}
 }

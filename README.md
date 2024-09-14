@@ -4,17 +4,13 @@
 
 It allows decoding/encoding between PCM and EA-ADPCM-XAS
 
+<div style="background-color: #FF3000">This is a branch that supports Net7 and only has XAS v1</div>
+
 ### Support
 
 | Name     | decode | function                       | encode | function      |
-| -------- | ------ | ------------------------------ | ------ | ------------- |
-| XA v1    | **✔️   | decode_XA_v1                   | **✔️   | encode_XA_v1  |
-| XA v2    | *✔️    | decode_XA_v2                   | *✔️    | encode_XA_v2  |
-| Maxis XA | **✔️   | decode_maxis_xa                | ❌      |               |
-| XAS v0   | **✔️   | decode_XAS_v0                  | ❌      |               |
-| XAS v1   | ✔️     | decode_XAS_v1,decode_XAS_v1_s2 | ✔️     | encode_XAS_v1 |
-
-`*:Not tested`  `**Unable to pass the test, more information is needed`
+| -------- | ------ | ------------------------------ | ------ | ------------- |            |
+| XAS v1   | ✔️     | decode_XAS_v1 | ✔️     | encode_XAS_v1 |
 
 ### Demo
 
@@ -31,16 +27,6 @@ byte[]encoded_data = EA_ADPCM.XAS.encode_XAS_v1(data, n_samples_per_channel,chan
 ```
 
 ### 
-
-### TODO:
-
-Revise XA
-
-reduce losses
-
-### Statement:
-
-The decoding part used another person's code, but I don't know their name
 
 ### Credits
 
