@@ -1,5 +1,8 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Text;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace EA_ADPCM_XAS_CSharp
 {
 	internal unsafe class EAAudio
@@ -89,67 +92,66 @@ namespace EA_ADPCM_XAS_CSharp
 			#endregion
 			#region XA v2
 			#region decode
-			static short decode_XA_sample(short[] prev_samples, short[] coef, int int4, byte shift)
+			static short decode_XA_sample(short[] prev_samples,int index, short[] coef, int int4, byte shift)
 			{
 				int correction = (int)int4 << shift;
-				int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
+				int prediction = prev_samples[1 + index] * coef[0] + prev_samples[index] * coef[1];
 				return (short)Clip_int16((prediction + correction + def_rounding) >> fixed_point_offset);
 			}
-			static long decode_EA_XA_R2_Chunk(void* XA_Chunk, short[]* out_PCM,short[]* prev_samples)
+			static long decode_EA_XA_R2_Chunk(byte[] XA_Chunk,long index,ref short[] out_PCM,ref short[] prev_samples) 
 			{
-				byte[]* p_curr_byte = (byte[]*)XA_Chunk;
-				short[]* pSample = out_PCM;
-				byte _byte = (*p_curr_byte)[0];
-				p_curr_byte++;
-				short[]* p_prev_samples = prev_samples;
-				if (_byte == 0xEE)
+				long originIndex = index;
+				int out_index = 0;
+				byte _byte = XA_Chunk[0];
+				index += 1;
+				if (_byte == 0xEE) 
 				{
-					(*prev_samples)[1] = Get_s16be(p_curr_byte);
-					p_curr_byte += 2;
-					(*prev_samples)[0] = Get_s16be(p_curr_byte);
-					p_curr_byte += 2;
-					for (int i = 0; i < samples_in_EA_XA_R_chunk; i++)
+					prev_samples[1] = Get_s16be(XA_Chunk,index);
+					index += 2;
+					prev_samples[0] = Get_s16be(XA_Chunk, index);
+					index += 2;
+					for (int i = 0; i<samples_in_EA_XA_R_chunk; i++)
 					{
-						(*pSample)[0] = Get_s16be(p_curr_byte);
-						pSample++;
-						p_curr_byte += 2;
+						out_PCM[out_index] = Get_s16be(XA_Chunk, index);
+						index += 2;
+						out_index += 1;
 					}
 				}
-				else
+				else 
 				{
 					int coef_index = _byte >> 4;
 					short[] coef = ea_adpcm_table_v2[coef_index];
 					byte shift = (byte)(12 + fixed_point_offset - (_byte & 0xF));
-					for (int j = 0; j < samples_in_EA_XA_R_chunk / 2; j++)
-					{
-						SamplesByte data = *(SamplesByte*)(p_curr_byte++);
-						(*pSample)[0] = decode_XA_sample(*p_prev_samples, coef, data.sample0, shift);
-						(*prev_samples)[2] = (*pSample)[0];
-						(*pSample)[1] = decode_XA_sample(*(p_prev_samples + 1), coef, data.sample1, shift);
-						p_prev_samples = pSample;
-						pSample += 2;
-					}
-					(*prev_samples)[1] = (*pSample)[-1];
-					(*prev_samples)[0] = (*pSample)[-2];
-				}
+					for (int j = 0; j<samples_in_EA_XA_R_chunk / 2; j++) {
 
-				return p_curr_byte - (byte[]*)XA_Chunk;
+						SamplesByte data = SamplesByte.ToSamplesByte(XA_Chunk,(int)index);
+						index += 1;
+						out_PCM[out_index] = decode_XA_sample(prev_samples,0, coef, data.sample0, shift);
+						prev_samples[2] = out_PCM[out_index]; // in case of p_prev_samples == prev_samples
+						out_PCM[1+out_index] = decode_XA_sample(prev_samples,1, coef, data.sample1, shift);
+						Array.Copy(out_PCM,index,prev_samples,0,3);
+						out_index += 2;
+					}
+					prev_samples[1] = out_PCM[-1];
+					prev_samples[0] = out_PCM[-2];
+				}
+				return index-originIndex;
 			}
-			public static void decode_EA_XA_R2(void* data, short[]* out_PCM, uint n_samples_per_channel, uint n_channels)
+
+			public static void decode_EA_XA_R2(byte[] data,ref short[] out_PCM, uint n_samples_per_channel, uint n_channels) 
 			{
-				byte[]* _data = (byte[]*)data;
-				short[] prev_samples = { 0, 0, 0 };
-				uint num_chunks = (n_samples_per_channel + (samples_in_EA_XA_R_chunk - 1)) / samples_in_EA_XA_R_chunk;
-				for (int i = 0; i < num_chunks; i++)
+				short[] prev_samples = { 0,0,0 };
+				long index = 0;
+				long num_chunks = (n_samples_per_channel + 27) / 28;
+				for (int i = 0; i<num_chunks; i++) 
 				{
-					long data_decoded_size = decode_EA_XA_R2_Chunk(_data, out_PCM,&prev_samples);
-					_data += data_decoded_size;
-					out_PCM += samples_in_EA_XA_R_chunk;
+					long data_decoded_size = decode_EA_XA_R2_Chunk(data,index,ref out_PCM,ref prev_samples);
+					index += data_decoded_size;
 				}
 			}
-			#endregion
-			#region encode
-			static int simple_CalcCoefShift(short[]* pSamples,ref short[] in_prevSamples, int num_samples, int* out_coef_index, byte* out_shift)
+#endregion
+#region encode
+static int simple_CalcCoefShift(short[]* pSamples,ref short[] in_prevSamples, int num_samples, int* out_coef_index, byte* out_shift)
 			{
 				const int num_coefs = 4;
 

@@ -1,6 +1,6 @@
 # EA-ADPCM-XAS-CSharp
 
-<mark>This project will change to support multiple languages instead</mark>
+<mark>There are many errors in this project, and I need more useful information</mark>
 
 ### Content
 
@@ -8,13 +8,13 @@ It allows decoding/encoding between PCM and EA-ADPCM-XAS
 
 ### Support
 
-| Name     | decode | function                       | encode | function      |
-| -------- | ------ | ------------------------------ | ------ | ------------- |
-| XA v1    | **✔️   | decode_XA_v1                   | **✔️   | encode_XA_v1  |
-| XA v2    | *✔️    | decode_XA_v2                   | *✔️    | encode_XA_v2  |
-| Maxis XA | **✔️   | decode_maxis_xa                | ❌      |               |
-| XAS v0   | **✔️   | decode_XAS_v0                  | ❌      |               |
-| XAS v1   | ✔️     | decode_XAS_v1,decode_XAS_v1_s2 | ✔️     | encode_XAS_v1 |
+| Name     | decode | function        | encode | function      |
+| -------- | ------ | --------------- | ------ | ------------- |
+| XA v1    | **✔️   | decode_XA_v1    | **✔️   | encode_XA_v1  |
+| XA v2    | *✔️    | decode_XA_v2    | *✔️    | encode_XA_v2  |
+| Maxis XA | **✔️   | decode_maxis_xa | ❌      |               |
+| XAS v0   | **✔️   | decode_XAS_v0   | ❌      |               |
+| XAS v1   | ✔️     | decode_XAS_v1   | ✔️     | encode_XAS_v1 |
 
 `*:Not tested`  `**Unable to pass the test, more information is needed`
 
