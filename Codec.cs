@@ -44,26 +44,18 @@ namespace EA_ADPCM_XAS_CSharp
 				Marshal.FreeHGlobal(optr);
 				return Out_data;
 			}
+			/*
 			public static byte[] encode_XA_v1(byte[] data, uint n_samples_per_channel, uint channels)
 			{
-				IntPtr optr = Marshal.AllocHGlobal((data.Length / sizeof_EA_XA_R1_chunk) * samples_in_EA_XA_R_chunk);
-				GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XA.encode_EA_XA_R1(optr.ToPointer(), (short[]*)ptr.ToPointer(), (int)channels);
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				handle.Free();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
 			}
+			*/
 			public static byte[] encode_XA_v2(byte[] data, uint n_samples_per_channel, uint channels)
 			{
-				IntPtr optr = Marshal.AllocHGlobal(2);
-				short[] in_PCM = new short[data.Length / 2];
-				Buffer.BlockCopy(data, 0,in_PCM , 0, data.Length);
-				EA.XA.encode_EA_XA_R2(optr.ToPointer(),in_PCM,n_samples_per_channel,channels);
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
+				short[] in_PCM = new short[data.Length / 2];;
+				EA.XA.encode_EA_XA_R2(ref data,0,ref in_PCM,0,n_samples_per_channel,channels,10);
+				byte[] out_data = new byte[sizeof(short) * in_PCM.Length];
+				Buffer.BlockCopy(in_PCM, 0, out_data, 0, out_data.Length);
+				return out_data;
 			}
 
 		}
