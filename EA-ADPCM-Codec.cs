@@ -566,31 +566,31 @@ namespace EA_ADPCM_XAS_CSharp
 					index++;
 				}
 			}
-			public static void decode_XAS_v1(void* in_data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
+			public static void decode_XAS_v1(byte[] in_data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
 			{
 				if (n_samples_per_channel == 0)
 				{
 					return;
 				}
-				byte[]* _data = (byte[]*)in_data;
 				uint encode_size = GetXASEncodedSize(n_samples_per_channel, n_channels);
 				XAS_Chunk[] _in_data = new XAS_Chunk[encode_size / 76];
-                for (int i = 0; i < _in_data.Length; i++)
+				int data_index = 0;
+				for (int i = 0; i < _in_data.Length; i++)
                 {
 					_in_data[i].headers = new XAS_SubChunkHeader[subchunks_in_XAS_chunk];
 					_in_data[i].XAS_data = new byte[15][];
                     for (int j = 0; j < 4; j++)
                     {
-						_in_data[i].headers[j].data = *(uint*)_data;
-						_data += 4;
+						_in_data[i].headers[j].data =  BitConverter.ToUInt32(in_data, data_index);
+						data_index += 4;
 					}
                     for (int j = 0; j < 15; j++)
                     {
 						_in_data[i].XAS_data[j] = new byte[subchunks_in_XAS_chunk];
                         for (int k = 0; k < subchunks_in_XAS_chunk; k++)
                         {
-							_in_data[i].XAS_data[j][k] = (*_data)[0];
-							_data++;
+							_in_data[i].XAS_data[j][k] = in_data[data_index];
+							data_index++;
 						}
                     }
                 }

@@ -1,10 +1,10 @@
 # EA-ADPCM-XAS-CSharp
 
-<mark>There are many errors in this project, and I need more useful information</mark>
-
 ### Content
 
 It allows decoding/encoding between PCM and EA-ADPCM-XAS
+
+<mark>The project is currently being modified.Possible incorrect decoding</mark>
 
 ### Support
 

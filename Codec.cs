@@ -77,13 +77,8 @@ namespace EA_ADPCM_XAS_CSharp
 			{
 				uint n_total_samples = (uint)((in_data.Length / 76) * 128);
 				short[] PCM_data = new short[sizeof(short) * n_total_samples];
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XAS.decode_XAS_v1(ptr.ToPointer(), ref PCM_data, n_total_samples / channels, channels);
-				handle.Free();
-				byte[] out_data = new byte[sizeof(int) * n_total_samples];
-				Buffer.BlockCopy(in_data, 0, out_data, 0, out_data.Length);
-				return out_data;
+				EA.XAS.decode_XAS_v1(in_data, ref PCM_data, n_total_samples / channels, channels);
+				return ShortArrayToByteArray(PCM_data);
 			}
 			
 			public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
