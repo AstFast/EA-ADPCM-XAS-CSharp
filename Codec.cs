@@ -8,6 +8,7 @@ namespace EA_ADPCM_XAS_CSharp
 	{
 		public class XA
 		{
+			/*
 			public static byte[] decode_XA_v1(byte[] in_data, uint n_samples_per_channel, uint channels)
 			{
 				uint frame_size = (uint)((channels > 1) ? 0x0f * 2 : 0x0f);
@@ -23,6 +24,7 @@ namespace EA_ADPCM_XAS_CSharp
 				Marshal.FreeHGlobal(optr);
 				return Out_data;
 			}
+			*/
 			public static byte[] decode_XA_v2(byte[] in_data,uint n_samples_per_channel, uint channels)
 			{
 				long n_chunks = (n_samples_per_channel + 27) / 28;
@@ -31,6 +33,7 @@ namespace EA_ADPCM_XAS_CSharp
 				EA.XA.decode_EA_XA_R2(in_data,ref out_data, n_samples_per_channel, channels);
 				return ShortArrayToByteArray(out_data);
 			}
+			/*
 			public static byte[] decode_maxis_xa(byte[] in_data, uint channels)
 			{
 				EA.XA.adpcm_history1_32 = 0;
@@ -44,7 +47,7 @@ namespace EA_ADPCM_XAS_CSharp
 				Marshal.FreeHGlobal(optr);
 				return Out_data;
 			}
-			/*
+			
 			public static byte[] encode_XA_v1(byte[] data, uint n_samples_per_channel, uint channels)
 			{
 			}
@@ -61,18 +64,7 @@ namespace EA_ADPCM_XAS_CSharp
 		}
 		public class XAS
 		{
-			public static byte[] decode_XAS_v0(byte[] in_data, uint channels)
-			{
-				uint n_total_samples = (uint)((in_data.Length / sizeof_EA_XA_R1_chunk) * samples_in_XAS_per_subchunk);
-				short[] PCM_data = new short[sizeof(short) * n_total_samples];
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XAS.decode_XAS_v0(ptr.ToPointer(), ref PCM_data, n_total_samples / channels, channels);
-				handle.Free();
-				byte[] out_data = new byte[sizeof(int) * n_total_samples];
-				Buffer.BlockCopy(in_data, 0, out_data, 0, out_data.Length);
-				return out_data;
-			}
+			
 			public static byte[] decode_XAS_v1(byte[] in_data, uint channels)
 			{
 				uint n_total_samples = (uint)((in_data.Length / 76) * 128);
@@ -88,31 +80,9 @@ namespace EA_ADPCM_XAS_CSharp
 			public static byte[] encode_XAS_v1(byte[] rawdata, uint n_samples_per_channel, uint channels)
 			{
 				uint encode_size = GetXASEncodedSize(n_samples_per_channel, channels);
-				XAS_Chunk[] out_data = new XAS_Chunk[encode_size / 76];
 				short[] shorts = new short[rawdata.Length / 2];
 				Buffer.BlockCopy(rawdata, 0, shorts, 0, rawdata.Length);
-				EA.XAS.encode_XAS_v1(ref out_data, shorts, n_samples_per_channel, channels);
-				List<byte> bytes = new List<byte>();
-				foreach (var item in out_data)
-				{
-					foreach (var item1 in item.headers)
-					{
-						byte[] bytes1 = new byte[4];
-						bytes1 = BitConverter.GetBytes(item1.data);
-						for (int i = 0; i < bytes1.Length; i++)
-						{
-							bytes.Add(bytes1[i]);
-						}
-					}
-					foreach (var item1 in item.XAS_data)
-					{
-						foreach (var item2 in item1)
-						{
-							bytes.Add(item2);
-						}
-					}
-				}
-				return bytes.ToArray();
+				return EA.XAS.encode_XAS_v1(shorts, encode_size, n_samples_per_channel, channels);
 			}
 		}
 		
@@ -214,6 +184,11 @@ namespace EA_ADPCM_XAS_CSharp
 			public Int16 decoded;
 			public byte encoded;
 		}
+		public struct XAS_Chunk
+		{
+			public XAS_SubChunkHeader[] headers;
+			public byte[][] XAS_data;
+		}
 		public struct XAS_SubChunkHeader
 		{
 			public uint data;
@@ -248,11 +223,7 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 		}
 
-		public struct XAS_Chunk
-		{
-			public XAS_SubChunkHeader[] headers;
-			public byte[][] XAS_data;
-		}
+		
 		public static int ea_xa_bytes_to_samples(int bytes, int channels)
 		{
 			if (channels <= 0) 
