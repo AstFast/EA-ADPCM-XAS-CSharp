@@ -6,38 +6,7 @@ namespace EA_ADPCM_XAS_CSharp
 		public partial class XAS
 		{
 			#region v0
-			static void decode_XAS_chunk_v0(void* in_data, short[]* PCM, uint n_channels)
-			{
-				int samples_done = 0;
-				byte[]* _in_data = (byte[]*)in_data;
-				uint frame_header = get_u32le(*_in_data);
-				float[] coef = ea_adpcm_table_xas_v0[frame_header & 0x0F];
-				short[] hist = new short[2];
-				hist[0] = (short)((frame_header >> 0) & 0xFFF0);
-				hist[1] = (short)((frame_header >> 16) & 0xFFF0);
-				byte shift = (byte)((frame_header >> 16) & 0x0F);
-				for (int i = 0; i < 2; i++)
-				{
-					(*PCM)[samples_done * n_channels] = hist[0];
-					samples_done += 2;
-				}
-
-				for (int i = 0; i < samples_in_XAS_subchunk; i++)
-				{
-					byte nibbles = (*_in_data)[0x02 + 0x02 + i / 2];
-					int sample;
-					sample = (i & 1) != 0 ?
-							(nibbles >> 0) & 0x0f :
-							(nibbles >> 4) & 0x0f;
-					sample = (short)(sample << 12) >> shift;
-					sample = sample + (int)(hist[1] * coef[0] + hist[0] * coef[1]);
-					sample = Clip_int16(sample);
-					(*PCM)[samples_done * n_channels] = (short)sample;
-					samples_done += 2;
-					hist[0] = hist[1];
-					hist[1] = (short)sample;
-				}
-			}
+			
 			#endregion
 			#region v1
 			public static void decode_XAS_v1(in byte[] in_data, ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)

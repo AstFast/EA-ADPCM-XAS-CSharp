@@ -5,6 +5,7 @@ namespace EA_ADPCM_XAS_CSharp
 	{
 		public partial class XAS
 		{
+			#region v1
 			static int simple_CalcCoefShift(in short[] pSamples, long index,in short[] in_prevSamples, int num_samples, out int out_coef_index, out byte out_shift)
 			{
 				const int num_coefs = 4;
@@ -165,6 +166,7 @@ namespace EA_ADPCM_XAS_CSharp
 				Buffer.BlockCopy(_out_data,0,out_data,0,out_data.Length);
 				return out_data;
 			}
+			#endregion
 		}
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 using System.Runtime.InteropServices;
+using System;
 
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -25,39 +26,26 @@ namespace EA_ADPCM_XAS_CSharp
 				return Out_data;
 			}
 			*/
-			public static byte[] decode_XA_v2(byte[] in_data,uint n_samples_per_channel, uint channels)
+			public static byte[] decode_XA_v2(in byte[] in_data,uint n_samples_per_channel, uint channels)
 			{
 				long n_chunks = (n_samples_per_channel + 27) / 28;
 				long encoded_size = n_chunks * 61;
-				short[] out_data = new short[encoded_size / 2];
-				EA.XA.decode_EA_XA_R2(in_data,ref out_data, n_samples_per_channel, channels);
-				return ShortArrayToByteArray(out_data);
-			}
-			/*
-			public static byte[] decode_maxis_xa(byte[] in_data, uint channels)
-			{
-				EA.XA.adpcm_history1_32 = 0;
-				EA.XA.adpcm_history2_32 = 0;
-				IntPtr optr = Marshal.AllocHGlobal((in_data.Length / 15) *samples_in_EA_XA_R_chunk);
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XA.deocode_maxis_xa((byte[]*)optr.ToPointer(), (short[]*)ptr.ToPointer(),(int)channels);
+				IntPtr out_data = Marshal.AllocHGlobal((int)encoded_size);
+				GCHandle handle = GCHandle.Alloc(in_data);
+				IntPtr _in_data = handle.AddrOfPinnedObject();
+				EA.XA.decode_EA_XA_R2((byte*)_in_data,(short*)out_data, n_samples_per_channel, channels);
 				handle.Free();
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
+				byte[] bytes = new byte[encoded_size];
+				Marshal.Copy(out_data,bytes,0,bytes.Length);
+				Marshal.FreeHGlobal(out_data);
+				return bytes;
 			}
-			
-			public static byte[] encode_XA_v1(byte[] data, uint n_samples_per_channel, uint channels)
+			public static byte[] encode_XA_v2(in short[] in_data, uint n_samples_per_channel, uint channels)
 			{
-			}
-			*/
-			public static byte[] encode_XA_v2(byte[] data, uint n_samples_per_channel, uint channels)
-			{
-				short[] in_PCM = new short[data.Length / 2];;
-				EA.XA.encode_EA_XA_R2(ref data,0,ref in_PCM,0,n_samples_per_channel,channels,10);
-				byte[] out_data = new byte[sizeof(short) * in_PCM.Length];
-				Buffer.BlockCopy(in_PCM, 0, out_data, 0, out_data.Length);
+				int n_chunks = (int)((n_samples_per_channel + 27) / 28);
+				long encoded_size = n_chunks * 61;
+				byte[] out_data = new byte[encoded_size];
+				_ = EA.XA.encode_EA_XA_R2(ref out_data,in in_data,n_samples_per_channel,channels,10);
 				return out_data;
 			}
 
@@ -65,7 +53,7 @@ namespace EA_ADPCM_XAS_CSharp
 		public class XAS
 		{
 			
-			public static byte[] decode_XAS_v1(byte[] in_data, uint channels)
+			public static byte[] decode_XAS_v1(in byte[] in_data, uint channels)
 			{
 				uint n_total_samples = (uint)((in_data.Length / 76) * 128);
 				short[] PCM_data = new short[sizeof(short) * n_total_samples];
@@ -77,7 +65,7 @@ namespace EA_ADPCM_XAS_CSharp
 			{
 				return XASStruct.GetXASEncodedSize(n_samples_per_channel, n_channels);
 			}
-			public static byte[] encode_XAS_v1(byte[] rawdata, uint n_samples_per_channel, uint channels)
+			public static byte[] encode_XAS_v1(in byte[] rawdata, uint n_samples_per_channel, uint channels)
 			{
 				uint encode_size = GetXASEncodedSize(n_samples_per_channel, channels);
 				short[] shorts = new short[rawdata.Length / 2];
@@ -160,23 +148,17 @@ namespace EA_ADPCM_XAS_CSharp
 		}
 		public struct SamplesByte
 		{
-			private sbyte data;
+			public byte data;
 
 			public sbyte sample1
 			{
 				get { return (sbyte)(data & 0x0F); }
-				set { data = (sbyte)((data & 0xF0) | (value & 0x0F)); }
+				set { data = (byte)((data & 0xF0) | (value & 0x0F)); }
 			}
 			public sbyte sample0
 			{
 				get { return (sbyte)((data >> 4) & 0x0F); }
-				set { data = (sbyte)((data & 0x0F) | ((value & 0x0F) << 4)); }
-			}
-			public static SamplesByte ToSamplesByte(byte[] data,int index)
-			{
-				var temp = new SamplesByte();
-				temp.data = (sbyte)BitConverter.ToInt16(data,index);
-				return temp;
+				set { data = (byte)((data & 0x0F) | ((value & 0x0F) << 4)); }
 			}
 		}
 		public struct EncodedSample
@@ -267,5 +249,13 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			return (short)(((val & 0xFF00) >> 8) | ((val & 0x00FF) << 8));
 		}
-	}
+		/*
+		public static short decode_XA_sample(in short[] prev_samples,int index, short[] coef, int int4, byte shift) 
+		{
+			int correction = int4 << shift;
+		    int prediction = prev_samples[1 + index] * coef[0] + prev_samples[index] * coef[1];
+	        return (short)Clip_int16((prediction + correction + def_rounding) >> fixed_point_offset);
+        }
+		*/
+    }
 }
