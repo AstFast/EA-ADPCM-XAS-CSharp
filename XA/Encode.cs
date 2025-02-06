@@ -84,7 +84,7 @@ namespace EA_ADPCM_XAS_CSharp
 				}
 				return new EncodedSample { decoded = (short)decoded, encoded = (byte)res };
 			}
-			static void encode_EA_XA_block(ref byte[] data, long data_index, in short[] PCM, long PCM_index, ref short[] prev, int samples, int PCM_step, short[] coefs, byte shift, int data_step = 1)
+			static void encode_EA_XA_block(ref byte[] data, int data_index, in short[] PCM, int PCM_index, ref short[] prev, int samples, int PCM_step, short[] coefs, byte shift, int data_step = 1)
 			{
 				for (int i = 0; i < samples / 2; i++)
 				{
@@ -101,7 +101,7 @@ namespace EA_ADPCM_XAS_CSharp
 					data_index += data_step;
 				}
 			}
-			static void encode_EA_XA_R2_chunk_nocompr(ref byte[] data, long data_index, in short[] PCM, long PCM_index, ref short[] prev, int nCannels)
+			static void encode_EA_XA_R2_chunk_nocompr(ref byte[] data,int data_index, in short[] PCM, int PCM_index, ref short[] prev, int nCannels)
 			{
 				data[data_index] = 0xEE;
 				Buffer.BlockCopy(BitConverter.GetBytes(ToBigEndian16(PCM[26 * nCannels])), 0, data, (int)(data_index + 1), 2);
@@ -109,14 +109,14 @@ namespace EA_ADPCM_XAS_CSharp
 				prev[0] = PCM[26 * nCannels];
 				prev[1] = PCM[27 * nCannels];
 				short[] pOutData = new short[28];
-				Buffer.BlockCopy(data, (int)data_index + 5, pOutData, 0, 56);
+				Buffer.BlockCopy(data, data_index + 5, pOutData, 0, 56);
 				for (int i = 0; i < 28 * nCannels; i += nCannels)
 				{
 					pOutData[i] = ToBigEndian16(PCM[i]);
 				}
-				Buffer.BlockCopy(pOutData, 0, data, (int)data_index + 5, 56);
+				Buffer.BlockCopy(pOutData, 0, data, data_index + 5, 56);
 			}
-			static long encode_EA_XA_R2_chunk(ref byte[] data, long data_index, in short[] PCM, long PCM_index, ref short[] prev, int nCannels, short max_error)
+			static int encode_EA_XA_R2_chunk(ref byte[] data, int data_index, in short[] PCM, int PCM_index, ref short[] prev, int nCannels, short max_error)
 			{
 				int err = simple_CalcCoefShift(PCM, PCM_index, prev, 28, out int coef_index, out byte shift);
 				if (err > max_error)
@@ -133,22 +133,22 @@ namespace EA_ADPCM_XAS_CSharp
 					return sizeof_compr_EA_XA_R23_block;
 				}
 			}
-			static long encode_EA_XA_R2_channel(ref byte[] data, long data_index, in short[] PCM, long PCM_index, uint n_samples_per_channel, uint n_channels, short max_error)
+			static int encode_EA_XA_R2_channel(ref byte[] data, int data_index, in short[] PCM, int PCM_index, uint n_samples_per_channel, uint n_channels, short max_error)
 			{
 				int chunks_per_channel = (int)((n_samples_per_channel + 27) / 28);
 				short[] prev = new short[2];
-				long curr_data_index = data_index;
+				int curr_data_index = data_index;
 				encode_EA_XA_R2_chunk_nocompr(ref data, curr_data_index, PCM, PCM_index, ref prev, (int)n_channels);
 				curr_data_index += sizeof_uncompr_EA_XA_R23_block;
 				for (int chunk_ind = 1; chunk_ind < chunks_per_channel; chunk_ind++)
 				{
-					curr_data_index += encode_EA_XA_R2_chunk(ref data, curr_data_index, PCM, PCM_index + 28 * chunk_ind * n_channels, ref prev, (int)n_channels, max_error);
+					curr_data_index += encode_EA_XA_R2_chunk(ref data, curr_data_index, PCM, PCM_index + 28 * chunk_ind * (int)n_channels, ref prev, (int)n_channels, max_error);
 				}
 				return curr_data_index - data_index;
 			}
 			public static long encode_EA_XA_R2(ref byte[] out_data, in short[] PCM, uint n_samples_per_channel, uint n_channels, short max_error)
 			{
-				long curr_data_index = 0;
+				int curr_data_index = 0;
 				for (int chan_ind = 0; chan_ind < n_channels; chan_ind++)
 				{
 					curr_data_index += encode_EA_XA_R2_channel(ref out_data, curr_data_index, PCM, chan_ind, n_samples_per_channel, n_channels, max_error);
@@ -157,7 +157,7 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 			#endregion
 			#region R1
-			static void encode_EA_XA_R1_chunk(ref byte[] data, long data_index, in short[] PCM, long PCM_index, ref short[] prev, int nCannels)
+			static void encode_EA_XA_R1_chunk(ref byte[] data, int data_index, in short[] PCM, int PCM_index, ref short[] prev, int nCannels)
 			{
 				Buffer.BlockCopy(BitConverter.GetBytes(ToBigEndian16(prev[0])), 0, data, (int)data_index, 2);
 				Buffer.BlockCopy(BitConverter.GetBytes(ToBigEndian16(prev[1])), 0, data, (int)(data_index + 2), 2);

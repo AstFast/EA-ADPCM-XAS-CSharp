@@ -9,23 +9,6 @@ namespace EA_ADPCM_XAS_CSharp
 	{
 		public class XA
 		{
-			/*
-			public static byte[] decode_XA_v1(byte[] in_data, uint n_samples_per_channel, uint channels)
-			{
-				uint frame_size = (uint)((channels > 1) ? 0x0f * 2 : 0x0f);
-				int num_chunks = (int)((n_samples_per_channel + (frame_size - 1)) / frame_size);
-				IntPtr optr = Marshal.AllocHGlobal(num_chunks * samples_in_EA_XA_R_chunk);
-				GCHandle handle = GCHandle.Alloc(in_data, GCHandleType.Pinned);
-				IntPtr ptr = handle.AddrOfPinnedObject();
-				EA.XA.adpcm_history1_32 = 0;
-				EA.XA.adpcm_history2_32 = 0;
-				EA.XA.decode_EA_XA_v1(ptr.ToPointer(), (short[]*)optr.ToPointer(),(int)channels,num_chunks);
-				handle.Free();
-				byte[] Out_data = *(byte[]*)optr.ToPointer();
-				Marshal.FreeHGlobal(optr);
-				return Out_data;
-			}
-			*/
 			public static byte[] decode_XA_v2(in byte[] in_data,uint n_samples_per_channel, uint channels)
 			{
 				long n_chunks = (n_samples_per_channel + 27) / 28;
