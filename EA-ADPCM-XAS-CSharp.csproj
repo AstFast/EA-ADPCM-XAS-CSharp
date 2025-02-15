@@ -6,6 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="XA\Maxis\Decode.txt" />
+    <None Remove="XA\Maxis\Encode.txt" />
+    <None Remove="XA\R\Encode.txt" />
+  </ItemGroup>
 
 </Project>

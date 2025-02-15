@@ -2,31 +2,15 @@
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
 {
-	public unsafe partial class EAAudio
+	internal unsafe partial class EAAudio
 	{
 		public partial class XA
 		{
-
-			/*
-			void decode_EA_XA_R2(in byte[] data,ref short[] out_PCM, uint n_samples_per_channel, uint n_channels)
-			{
-				long data_index = 0;
-				long out_PCM_index = 0;
-				short[] prev_samples = { 0 };
-				int num_chunks = (int)((n_samples_per_channel + 27) / 28);
-				for (int i = 0; i < num_chunks; i++) 
-				{
-					long data_decoded_size = decode_EA_XA_R2_Chunk(in data,data_index,ref out_PCM,out_PCM_index,ref prev_samples);
-					data_index += data_decoded_size;
-					out_PCM_index += samples_in_EA_XA_R_chunk;
-				}
-			}
-			*/
 			static short decode_XA_sample(short* prev_samples, short[] coef, int int4, byte shift)
 			{
 				int correction = int4 << shift;
 				int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
-				return (short)Clip_int16((prediction + correction + def_rounding) >> fixed_point_offset);
+				return Clip_int16((prediction + correction + def_rounding) >> fixed_point_offset);
 			}
 			static long decode_EA_XA_R2_Chunk(byte* XA_Chunk, short* out_PCM,short* prev_samples)
 			{

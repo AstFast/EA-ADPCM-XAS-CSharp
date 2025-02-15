@@ -1,14 +1,22 @@
 ﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 using System.Runtime.InteropServices;
-using System;
 
 namespace EA_ADPCM_XAS_CSharp
 {
 	public unsafe static class EA_ADPCM
 	{
-		public class XA
+		public static class XA
 		{
+			public static byte[] decode_Maxis_XA(in byte[] data,int channels)
+			{
+				short[] bytes =  EA.MaxisXA.decode_Maxis_XA(data,channels);
+				return ShortArrayToByteArray(bytes);
+			}
+			public static byte[] encode_Maxis_XA(in byte[] data, int channels)
+			{
+				return EA.MaxisXA.encode_Maxis_XA(data, channels);
+			}
 			public static byte[] decode_XA_v2(in byte[] in_data,uint n_samples_per_channel, uint channels)
 			{
 				long n_chunks = (n_samples_per_channel + 27) / 28;
@@ -23,15 +31,6 @@ namespace EA_ADPCM_XAS_CSharp
 				Marshal.FreeHGlobal(out_data);
 				return bytes;
 			}
-			public static byte[] encode_XA_v2(in short[] in_data, uint n_samples_per_channel, uint channels)
-			{
-				int n_chunks = (int)((n_samples_per_channel + 27) / 28);
-				long encoded_size = n_chunks * 61;
-				byte[] out_data = new byte[encoded_size];
-				_ = EA.XA.encode_EA_XA_R2(ref out_data,in in_data,n_samples_per_channel,channels,10);
-				return out_data;
-			}
-
 		}
 		public class XAS
 		{
@@ -77,6 +76,13 @@ namespace EA_ADPCM_XAS_CSharp
 			new float[]{ 1.796875F, -0.8125F},
 			new float[]{ 1.53125F, -0.859375F},
 		};
+		public static double[][] XaFiltersOpposite = new double[][]
+		{
+			new double[]{ 0,         0 },
+			new double[]{ -0.9375,  0 },
+	        new double[]{ -1.796875, 0.8125 }, 
+			new double[]{ -1.53125, 0.859375 }
+		};
 		public static short[][] ea_adpcm_table_v2 = new short[][]{
 			new short[]{ (short)(0.000000 * fixp_exponent), (short)(0.000000 * fixp_exponent) },
 			new short[]{ (short)(0.937500 * fixp_exponent), (short)(0.000000 * fixp_exponent) },
@@ -101,9 +107,23 @@ namespace EA_ADPCM_XAS_CSharp
 		public const int sizeof_EA_XA_R1_chunk = 1 + 2 * sizeof(short) + samples_in_EA_XA_R_chunk / 2;
 		public const int sizeof_uncompr_EA_XA_R23_block = 1 + (samples_in_EA_XA_R_chunk + 2) * sizeof(short);
 		public const int sizeof_compr_EA_XA_R23_block = 1 + samples_in_EA_XA_R_chunk / 2;
+		/*
 		public static int Clip_int16(int val)
 		{
 			return (val >= 0x7FFF) ? 0x7FFF : (val <= -0x8000) ? -0x8000 : val;
+		}
+		*/
+		public static short Clip_int16(int val)
+		{
+			if (val >= short.MaxValue)
+			{
+				return short.MaxValue;
+			}
+			if (val <= short.MinValue)
+			{
+				return short.MinValue;
+			}
+			return (short)val;
 		}
 		public static int Clip_int4(int val)
 		{
@@ -123,11 +143,11 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			return GetNumXASTotalChunks(n_samples_per_channel, n_channels) * 76;
 		}
-		public static byte[] ShortArrayToByteArray(short[] shortArray)
+		public static ref byte[] ShortArrayToByteArray(in short[] shortArray)
 		{
 			byte[] byteArray = new byte[shortArray.Length * 2];
 			Buffer.BlockCopy(shortArray, 0, byteArray, 0, byteArray.Length);
-			return byteArray;
+			return ref byteArray;
 		}
 		public struct SamplesByte
 		{
@@ -232,6 +252,41 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			return (short)(((val & 0xFF00) >> 8) | ((val & 0x00FF) << 8));
 		}
+
+		public static bool ReadSamples(in byte[] data, ref int data_index, ref short[] output, int channels, int nSamples)
+		{
+			try
+			{
+				if (channels == 1)
+				{
+					Buffer.BlockCopy(data, data_index, output, 0, 2 * nSamples);
+					data_index += 2 * nSamples;
+				}
+				else
+				{
+					int samplesToRead = nSamples * channels;
+					short[] rawSamples = new short[samplesToRead];
+					Buffer.BlockCopy(data, data_index, rawSamples, 0, 2 * samplesToRead);
+					data_index += 2 * samplesToRead;
+					for (int c = 0; c < channels; c++)
+					{
+						int rawSamplesIte = c;
+						int outputIte_index = c * nSamples;
+						for (int i = 0; i < nSamples; i++)
+						{
+							output[outputIte_index++] = rawSamples[rawSamplesIte];
+							rawSamplesIte += channels;
+						}
+					}
+				}
+				//sampleOffset += nSamples;
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
+		}
 		/*
 		public static short decode_XA_sample(in short[] prev_samples,int index, short[] coef, int int4, byte shift) 
 		{
@@ -240,5 +295,5 @@ namespace EA_ADPCM_XAS_CSharp
 	        return (short)Clip_int16((prediction + correction + def_rounding) >> fixed_point_offset);
         }
 		*/
-    }
+	}
 }

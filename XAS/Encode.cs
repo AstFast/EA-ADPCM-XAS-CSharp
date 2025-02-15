@@ -1,7 +1,7 @@
 ﻿using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
 {
-	public unsafe partial class EAAudio
+	internal unsafe partial class EAAudio
 	{
 		public partial class XAS
 		{
