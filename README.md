@@ -8,14 +8,14 @@ It allows decoding/encoding between PCM and EA-ADPCM-XAS
 
 ### Support
 
-| Name     | decode | function      | encode | function        |
-| -------- | ------ | ------------- | ------ | --------------- |
-| XA v1    | ❌      |               | ❌      |                 |
-| XA v2    | *❌     | decode_XA_v2  | *✔️    | encode_XA_v2    |
-| Maxis XA | ✔️     |               | ✔️     | encode_Maxis_XA |
-| XAS v0   | ❌      |               | ❌      |                 |
-| XAS v1   | ✔️     | decode_XAS_v1 | ✔️     | encode_XAS_v1   |
-|          |        |               |        |                 |
+| Name     | decode | function        | encode | function        |
+| -------- | ------ | --------------- | ------ | --------------- |
+| XA v1    | ❌      |                 | ❌      |                 |
+| XA v2    | *❌     | decode_XA_v2    | *❌     | encode_XA_v2    |
+| Maxis XA | ✔️     | decode_Maxis_XA | ✔️     | encode_Maxis_XA |
+| XAS v0   | ❌      |                 | ❌      |                 |
+| XAS v1   | ✔️     | decode_XAS_v1   | ✔️     | encode_XAS_v1   |
+|          |        |                 |        |                 |
 
 `*:Not tested`  `**Unable to pass the test, more information is needed`
 
