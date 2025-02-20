@@ -9,11 +9,12 @@ namespace EA_ADPCM_XAS_CSharp
 			static void EncodeAndInterleave(in short[] samples,ref byte[] output,ref EaXaEncoder[] encoders, int channels, int nSamples)
 			{
 				int nBytes = 1 + (nSamples + 1) / 2;
+				short[] temp = Array.Empty<short>();
 				for (int c = 0; c < channels; c++)
 				{
 					int inputSamples_index = c * nSamples;
 					byte[] encoded = new byte[15];
-					encoders[c].encodeSubblock(samples,inputSamples_index,ref encoded, nSamples,null);
+					encoders[c].encodeSubblock(samples, inputSamples_index, ref encoded,0, nSamples,false,ref temp);
 					for (int b = 0; b < nBytes; b++)
 					{
 						output[c + b * channels] = encoded[b];
@@ -56,7 +57,6 @@ namespace EA_ADPCM_XAS_CSharp
 					}
 					EncodeAndInterleave(samples,ref block,ref encoders,channels, samplesInBlock);
 					out_data.AddRange(block);
-                    //out.write((char*)block.get(), blockSize);
 				}
 				return out_data.ToArray();
 			}

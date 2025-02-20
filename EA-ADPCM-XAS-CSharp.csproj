@@ -12,6 +12,7 @@
   <ItemGroup>
     <None Remove="XA\Maxis\Decode.txt" />
     <None Remove="XA\Maxis\Encode.txt" />
+    <None Remove="XA\R\Decode.txt" />
     <None Remove="XA\R\Encode.txt" />
   </ItemGroup>
 
