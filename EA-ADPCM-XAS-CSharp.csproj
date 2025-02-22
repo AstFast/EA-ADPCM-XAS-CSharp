@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <RootNamespace>EA_ADPCM_XAS_CSharp</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="XA\Maxis\Decode.txt" />
+    <None Remove="XA\Maxis\Encode.txt" />
+    <None Remove="XA\R\Decode.txt" />
+    <None Remove="XA\R\Encode.txt" />
+    <None Remove="XA\R\_R2.txt" />
+  </ItemGroup>
+
+</Project>

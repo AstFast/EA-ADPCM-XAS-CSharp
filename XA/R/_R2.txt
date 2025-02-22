@@ -1,0 +1,221 @@
+﻿using System.Runtime.InteropServices;
+using static EA_ADPCM_XAS_CSharp.XASStruct;
+namespace EA_ADPCM_XAS_CSharp
+{
+	internal unsafe partial class EAAudio
+	{
+		public partial class XA
+		{
+			#region Decode
+			static short decode_XA_sample(Span<short> prev_samples, Span<short> coef, int int4, byte shift)
+			{
+				int correction = int4 << shift;
+				int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
+				return Clip_int16((prediction + correction + def_rounding) >> fixed_point_offset);
+			}
+		    static int decode_EA_XA_R2_Chunk(Span<byte> XA_Chunk, Span<short> out_PCM, Span<short> prev_samples)
+			{
+				Span<byte> p_curr_byte = XA_Chunk;
+				Span<short> pSample = out_PCM;
+				byte _byte = p_curr_byte[0];
+				p_curr_byte.Slice(1);
+				Span<short> p_prev_samples = prev_samples;
+				if (_byte == 0xEE) {
+					prev_samples[1] = Get_s16be(p_curr_byte);
+					p_curr_byte = p_curr_byte.Slice(2);
+					prev_samples[0] = Get_s16be(p_curr_byte);
+					p_curr_byte = p_curr_byte.Slice(2);
+					for (int i = 0; i < samples_in_EA_XA_R_chunk; i++)
+					{
+						pSample[0] = Get_s16be(p_curr_byte);
+						pSample = pSample.Slice(1);
+						p_curr_byte = p_curr_byte.Slice(2);
+					}
+				}
+				else {
+					int coef_index = _byte >> 4;
+					Span<short> coef = ea_adpcm_table_v2[coef_index];
+					byte shift = (byte)(12 + fixed_point_offset - (_byte & 0xF));
+					for (int j = 0; j < samples_in_EA_XA_R_chunk / 2; j++) {
+						SamplesByte data = new();
+						data.data= p_curr_byte[0];
+						p_curr_byte = p_curr_byte.Slice(1);
+						pSample[0] = decode_XA_sample(p_prev_samples, coef, data.sample0, shift);
+						prev_samples[2] = pSample[0];
+						pSample[1] = decode_XA_sample(p_prev_samples.Slice(1), coef, data.sample1, shift);
+						p_prev_samples = pSample;
+						pSample = pSample.Slice(2);
+					}
+					prev_samples[1] = pSample[-1];
+					prev_samples[0] = pSample[-2];
+				}
+
+				return XA_Chunk.Length - p_curr_byte.Length;
+			}
+
+			public static void decode_EA_XA_R2(Span<byte> data, Span<short> out_PCM, uint n_samples_per_channel, int n_channels)
+			{
+				Span<byte> _data = data;
+				short[] prev_samples = new short[3]{ 0,0,0 };
+				int num_chunks = (short)((n_samples_per_channel + 27) / 28);
+				for (int i = 0; i < num_chunks; i++) {
+					int data_decoded_size = decode_EA_XA_R2_Chunk(_data, out_PCM, prev_samples);
+					_data = _data.Slice(data_decoded_size);
+					out_PCM = out_PCM.Slice(samples_in_EA_XA_R_chunk);
+				}
+			}
+            #endregion
+            #region Encode
+            static void encode_EA_XA_R1_chunk(Span<byte> data/*sizeof_EA_XA_R1_chunk*/, Span<short> PCM/*28*/, Span<short> prev, int nCannels)
+			{
+				MemoryMarshal.Cast<byte, short>(data)[0] = ToBigEndian16(prev[0]);
+				MemoryMarshal.Cast<byte, short>(data.Slice(2))[0] = ToBigEndian16(prev[1]);
+				simple_CalcCoefShift(PCM, prev, 28,out int coef_index,out byte shift);
+				data[4] = (byte)(coef_index << 4 | shift);
+				short[] _prev = new short[2]; 
+				Buffer.BlockCopy(prev.ToArray(),0,_prev,0,4);
+				encode_EA_XA_block(data.Slice(5), PCM, _prev, 28, nCannels, ea_adpcm_table_v2[coef_index], (byte)(12 + fixed_point_offset - shift));
+			}
+		    static int simple_CalcCoefShift(Span<short> pSamples, Span<short> in_prevSamples, int num_samples, out int out_coef_index, out byte out_shift)
+			{
+				const int num_coefs = 4;
+				int min_max_error = int.MaxValue;
+				int s_min_max_error = int.MaxValue;
+				int best_coef_ind = 0;
+				for (int coef_ind = 0; coef_ind < num_coefs; coef_ind++) {
+					short[] prevSamples = { in_prevSamples[0], in_prevSamples[1] };
+					int max_error = 0;
+					int s_max_error = 0;
+					for (int i = 0; i < num_samples; i++) {
+						int prediction = ea_adpcm_table_v2[coef_ind][0] * prevSamples[1] + ea_adpcm_table_v2[coef_ind][1] * prevSamples[0];
+						int sample = pSamples[i];
+						sample <<= fixed_point_offset;
+						int s_error = sample - prediction;
+						int error = Math.Abs(s_error);
+						if (error > max_error) {
+							max_error = error;
+							s_max_error = s_error;
+						}
+						prevSamples[0] = prevSamples[1];
+						prevSamples[1] = pSamples[i];
+					}
+					if (max_error < min_max_error) {
+						min_max_error = max_error;
+						best_coef_ind = coef_ind;
+						s_min_max_error = s_max_error;
+					}
+				}
+				int max_min_error_i16 = Clip_int16(min_max_error >> fixed_point_offset);
+				int mask = 0x4000;
+				int exp_shift;
+				for (exp_shift = 0; exp_shift < 12; exp_shift++)
+				{
+					if ((((mask >> 3) + max_min_error_i16) & mask) != 0)
+					{
+						break;
+					}
+					mask >>= 1;
+				}
+				out_coef_index = best_coef_ind;
+				out_shift = (byte)exp_shift;
+				return max_min_error_i16;
+			}
+			static EncodedSample encode_XA_sample(Span<short> prev_samples, Span<short> coef, int sample, byte shift)
+			{
+				int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
+				int correction = (sample << fixed_point_offset) - prediction;
+				int res;
+				int rounding = 1 << (shift - 1);
+				res = Clip_int4((correction + rounding) >> shift);
+				int predecoded = ((res << shift) + prediction + def_rounding) >> fixed_point_offset;
+				int decoded = Clip_int16(predecoded);
+				int term = 1 << (shift - fixed_point_offset);
+				int decoded2;
+				decoded2 = Clip_int16(predecoded + term);
+				if (res != 7 && Math.Abs(decoded - sample) > Math.Abs(decoded2 - sample)) {
+					res += 1;
+					decoded = decoded2;
+				}
+				else {
+					decoded2 = Clip_int16(predecoded - term);
+					if (res != -8 && Math.Abs(decoded - sample) > Math.Abs(decoded2 - sample)) {
+						res -= 1;
+						decoded = decoded2;
+					}
+				}
+				return new EncodedSample{ decoded = (short)decoded, encoded = (byte)res};
+			}
+			static void encode_EA_XA_R2_chunk_nocompr(Span<byte> data, Span<short> PCM, Span<short> prev, int nCannels)
+			{
+				data[0] = 0xEE;
+				MemoryMarshal.Cast<byte, short>(data.Slice(1))[0] = ToBigEndian16(PCM[26 * nCannels]);
+				MemoryMarshal.Cast<byte, short>(data.Slice(3))[0] = ToBigEndian16(PCM[27 * nCannels]);
+				prev[0] = PCM[26 * nCannels];
+				prev[1] = PCM[27 * nCannels];
+				Span<short> pOutData = MemoryMarshal.Cast<byte, short>(data.Slice(5));
+				for (int i = 0; i < 28 * nCannels; i += nCannels)
+				{
+					pOutData[i] = ToBigEndian16(PCM[i]);
+				}
+			}
+			static void encode_EA_XA_block(Span<byte> data, Span<short> PCM, Span<short> prev, int samples, int PCM_step, Span<short> coefs, byte shift, int data_step = 1)
+			{
+				for (int i = 0; i < samples / 2; i++)
+				{
+					byte _data = 0;
+					for (int j = 0; j < 2; j++)
+					{
+						EncodedSample enc = encode_XA_sample(prev, coefs, PCM[(i * 2 + j) * PCM_step], shift);
+						prev[0] = prev[1];
+						prev[1] = enc.decoded;
+						_data <<= 4;
+						_data |= enc.encoded;
+					}
+					data[0] = _data;
+					data = data.Slice(data_step);
+				}
+			}
+            static int encode_EA_XA_R2_chunk(Span<byte> data, Span<short> PCM, Span<short> prev, int nCannels, short max_error)
+			{
+				int err = simple_CalcCoefShift(PCM, prev, 28,out int coef_index,out byte shift);
+				if (err > max_error)
+				{
+					encode_EA_XA_R2_chunk_nocompr(data, PCM, prev, nCannels);
+					return sizeof_uncompr_EA_XA_R23_block;
+				}
+				else
+				{
+					data[0] = (byte)(coef_index << 4 | shift);
+					data = data.Slice(1);
+					shift = (byte)(12 + fixed_point_offset - shift);
+					Span<short> coefs = ea_adpcm_table_v2[coef_index];
+					encode_EA_XA_block(data, PCM, prev, 28, nCannels, coefs, shift);
+					return sizeof_compr_EA_XA_R23_block;
+				}
+			}
+            static int encode_EA_XA_R2_channel(Span<byte> data, Span<short> PCM, uint n_samples_per_channel, int n_channels, short max_error)
+			{
+				int chunks_per_channel = (int)((n_samples_per_channel + 27) / 28);
+				Span<short> prev = new short[2];
+				Span<byte> curr_data = data;
+				encode_EA_XA_R2_chunk_nocompr(curr_data.Slice(sizeof_uncompr_EA_XA_R23_block), PCM, prev, n_channels);
+				curr_data = curr_data.Slice(sizeof_uncompr_EA_XA_R23_block);
+				for (int chunk_ind = 1; chunk_ind < chunks_per_channel; chunk_ind++) 
+				{
+					curr_data = curr_data.Slice(encode_EA_XA_R2_chunk(curr_data.Slice(0,sizeof_uncompr_EA_XA_R23_block), PCM.Slice((int)(28 * chunk_ind * n_channels),28), prev, (int)n_channels, max_error));
+				}
+				return data.Length - curr_data.Length;
+			}
+			public static int encode_EA_XA_R2(Span<byte> data, Span<short> PCM, uint n_samples_per_channel, int n_channels, short max_error)
+			{
+				Span<byte> curr_data = data;
+				for (int chan_ind = 0; chan_ind < n_channels; chan_ind++)
+				{
+					curr_data = curr_data.Slice(encode_EA_XA_R2_channel(curr_data, PCM.Slice(chan_ind), n_samples_per_channel, n_channels, max_error));
+				}
+				return data.Length - curr_data.Length;
+			}
+			#endregion
+		}
+	}
+}
