@@ -17,4 +17,8 @@
     <None Remove="XA\R\_R2.txt" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="XAS\_XAS.txt" />
+  </ItemGroup>
+
 </Project>

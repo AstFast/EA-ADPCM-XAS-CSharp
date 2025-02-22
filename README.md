@@ -2,9 +2,11 @@
 
 ### Content
 
-It allows decoding/encoding between PCM and EA-ADPCM-XAS
+It allows decoding/encoding between PCM and EA XAS
 
 <mark>The project is currently being modified.Possible incorrect decoding</mark>
+
+The project may support lower levels .Net version, but requires modification
 
 ### Support
 
@@ -40,10 +42,6 @@ byte[]encoded_data = EA_ADPCM.XAS.encode_XAS_v1(data, n_samples_per_channel,chan
 Revise XA
 
 reduce losses
-
-### Statement:
-
-The decoding part used another person's code, but I don't know their name
 
 ### Credits
 
