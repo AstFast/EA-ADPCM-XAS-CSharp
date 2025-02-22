@@ -1,0 +1,104 @@
+﻿using static EA_ADPCM_XAS_CSharp.XASStruct;
+using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Text;
+using System;
+using System.Data;
+namespace EA_ADPCM_XAS_CSharp
+{
+	internal unsafe partial class EAAudio
+	{
+		public partial class XA
+		{
+			static void encodeXasBlock(Span<short> samples,ref Span<byte> output, int nSamples,int channels,ref EaXaEncoder[] encoders)
+			{
+				for (int c = 0; c < channels; c++)
+				{
+					Span<short> inputSamples = samples.Slice(c * nSamples);
+					Span<short> inputSamplesPadded = new short[128];
+					if (nSamples < 128)
+					{
+						inputSamplesPadded.Slice(0, inputSamplesPadded.Length * 2).Fill(0);
+						for (int i = 0; i < nSamples * 2; i++)
+						{
+							inputSamples[i] = inputSamplesPadded[i];
+						}//There is currently no good method
+						inputSamples = inputSamplesPadded;
+					}
+					short[,] startSamples = new short[4,2];
+					byte[][] encoded = new byte[4][];
+					for (int i = 0; i < encoded.Length; i++)
+					{
+						encoded[i] = new byte[16];
+					}
+
+					for (int i = 0; i < 4; i++)
+					{
+						startSamples[i,0] = (short)(Clip_int16(inputSamples[0] + 8) & 0xFFF0);
+						startSamples[i,1] = (short)(Clip_int16(inputSamples[1] + 8) & 0xFFF0);
+						encoders[c].previousSample = startSamples[i,0];
+						encoders[c].currentSample = startSamples[i,1];
+						encoders[c].clearErrors();
+						encoders[c].encodeSubblock(inputSamples.Slice(2), encoded[i], 30);
+						inputSamples = inputSamples.Slice(32);
+					}
+
+					Span<short> startSamplesWithInfos = MemoryMarshal.Cast<byte, short>(output);
+					for (int i = 0; i < 4; i++)
+					{
+						byte infoByte = encoded[i][0];
+						startSamplesWithInfos[0] = (short)(startSamples[i,0] | (infoByte >> 4));
+						startSamplesWithInfos[1] = (short)(startSamples[i,1] | (infoByte & 0x0F));
+						startSamplesWithInfos = startSamplesWithInfos.Slice(2);
+					}
+					output = MemoryMarshal.Cast<short,byte>(startSamplesWithInfos);
+					for (int j = 1; j <= 15; j++)
+					{
+						for (int i = 0; i < 4; i++)
+						{
+							output[0] = encoded[i][j];
+							output = output.Slice(1);
+						}
+					}
+				}
+			}
+			public static byte[] encode_EA_XAS_v1(in byte[] data,int channels)
+			{
+				EaXaEncoder[] encoders = new EaXaEncoder[channels];
+				for (int i = 0; i < channels; i++)
+				{
+					encoders[i] = new EaXaEncoder();
+				}
+				int nSamples = data.Length / 2 / channels;
+				int codedSamples = 0;
+				bool lastBlock = false;
+				int data_index = 0;
+				Span<byte> block = new byte[76 * channels];
+				short[] samples = new short[128 * channels];
+				List<byte> out_data = new();
+				while (!lastBlock)
+				{
+					int samplesInBlock = 128;
+					codedSamples += samplesInBlock;
+					if (codedSamples >= nSamples)
+					{
+						int toRemove = codedSamples - nSamples;
+						samplesInBlock -= toRemove;
+						codedSamples = nSamples;
+						lastBlock = true;
+					}
+
+					if (!ReadSamples(data,ref data_index,ref samples,channels, samplesInBlock))
+					{
+						throw new IndexOutOfRangeException();
+					}
+
+					Span<byte> dataIte = block;
+					encodeXasBlock(samples,ref dataIte, samplesInBlock,channels,ref encoders);
+					out_data.AddRange(block.Slice(0, block.Length - dataIte.Length));
+				}
+				return out_data.ToArray();
+			}
+		}
+	}
+}
