@@ -131,6 +131,11 @@ namespace EA_ADPCM_XAS_CSharp
 			if (val <= -8) return -8;
 			return val;
 		}
+		public static int sign_extend(int val, int bits)
+		{
+			int shift = 8 * sizeof(int) - bits;
+			return (int)((uint)val << shift) >> shift;
+		}
 		public static uint _GetNumXASChunks(uint N_SAMPLES)
 		{
 			return ((N_SAMPLES + 127) / 128);

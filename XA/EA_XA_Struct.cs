@@ -69,9 +69,9 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 			for (; k < 28; k++)
 			{ // Fill the rest
-				outIte[0] = 45; //E// "GEND"
+				outIte[0] = 0x45; //E// "GEND"
 				outIte = outIte.Slice(1);
-				outIte[0] = 47;//G
+				outIte[0] = 0x47;//G
 				outIte = outIte.Slice(1);
 			}
 		}
@@ -137,7 +137,6 @@ namespace EA_ADPCM_XAS_CSharp
 			Span<byte> outIte = outputData.Slice(1);
 			double coefPrev = XaFiltersOpposite[chosenCoeff][1];
 			double coeffCur = XaFiltersOpposite[chosenCoeff][0];
-			//double* predErrorsIte = predErrors[chosenCoeff];
 			int predErrorsIte_index = 0;
 			double shiftMul = 1 << shift;
 			for (int i = 0; i < nSamples; i++)
