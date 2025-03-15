@@ -8,7 +8,7 @@ namespace EA_ADPCM_XAS_CSharp
 {
 	internal unsafe partial class EAAudio
 	{
-		public partial class XA
+		public partial class XAS
 		{
 			static void encodeXasBlock(Span<short> samples,ref Span<byte> output, int nSamples,int channels,ref EaXaEncoder[] encoders)
 			{
@@ -95,7 +95,11 @@ namespace EA_ADPCM_XAS_CSharp
 
 					Span<byte> dataIte = block;
 					encodeXasBlock(samples,ref dataIte, samplesInBlock,channels,ref encoders);
+					#if NET7_0
+					out_data.AddRange(block.Slice(0, block.Length - dataIte.Length).ToArray());
+					#else
 					out_data.AddRange(block.Slice(0, block.Length - dataIte.Length));
+					#endif
 				}
 				return out_data.ToArray();
 			}

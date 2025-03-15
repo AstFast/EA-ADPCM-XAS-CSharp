@@ -126,7 +126,11 @@ namespace EA_ADPCM_XAS_CSharp
 							encoders[c].currentSample = encoders[c].previousSample = samples[c * samplesInBlock];
 						}
 					}
-					outdata.AddRange(writeSCDlBlock(samplesInBlock,samples, ref encoders, channels, blockIndex == 1, revision));
+#if NET7_0
+					outdata.AddRange(writeSCDlBlock(samplesInBlock, samples, ref encoders, channels, blockIndex == 1, revision).ToArray());
+#else
+					outdata.AddRange(writeSCDlBlock(samplesInBlock, samples, ref encoders, channels, blockIndex == 1, revision));
+#endif
 					blockIndex++;
 				}
 

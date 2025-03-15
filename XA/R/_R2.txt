@@ -6,6 +6,13 @@ namespace EA_ADPCM_XAS_CSharp
 	{
 		public partial class XA
 		{
+			public static byte[] decode_EA_XA_R(in byte[] data, int decode_Size, int channels)
+			{
+				Span<short> decode = new short[decode_Size / 2];
+				EAAudio.XA.decode_EA_XA_R2(data, decode, (uint)decode_Size, channels);
+				return MemoryMarshal.Cast<short, byte>(decode).ToArray();
+
+			}
 			#region Decode
 			static short decode_XA_sample(Span<short> prev_samples, Span<short> coef, int int4, byte shift)
 			{

@@ -216,13 +216,34 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			return (short)(((val & 0xFF00) >> 8) | ((val & 0x00FF) << 8));
 		}
-		public static short Get_s16be(Span<byte> ptr) 
+		public static short Get_s16be(ref Span<byte> ptr) 
 		{
-			return ToBigEndian16(BitConverter.ToInt16(ptr));
+			return ToBigEndian16(Get_s16le(ref ptr));
+		}
+		public static short Get_s16le(ref Span<byte> ptr)
+		{
+			short temp = BitConverter.ToInt16(ptr);
+			ptr = ptr.Slice(2);
+			return temp;
+		}
+		public static int Get_s32be(ref Span<byte> ptr)
+		{
+			return ToBigEndian16(Get_s32le(ref ptr));
+		}
+		public static int Get_s32le(ref Span<byte> ptr)
+		{
+			int temp = BitConverter.ToInt32(ptr);
+			ptr = ptr.Slice(4);
+			return temp;
 		}
 		public static void bufferWrite16BEUnalign(ref Span<byte> data, int ToSample)
 		{
-			MemoryMarshal.Write(data.Slice(0,2),ToBigEndian16(ToSample));
+#if NET7_0
+            short _temp_ = ToBigEndian16(ToSample);
+			MemoryMarshal.Write(data.Slice(0, 2),ref _temp_);
+#else
+			MemoryMarshal.Write(data.Slice(0, 2), ToBigEndian16(ToSample));
+#endif
 			data = data.Slice(2);
 		}
 
@@ -252,7 +273,6 @@ namespace EA_ADPCM_XAS_CSharp
 						}
 					}
 				}
-				//sampleOffset += nSamples;
 				return true;
 			}
 			catch

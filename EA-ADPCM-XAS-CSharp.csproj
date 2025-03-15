@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net7.0</TargetFrameworks>
     <RootNamespace>EA_ADPCM_XAS_CSharp</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -19,6 +19,10 @@
 
   <ItemGroup>
     <Compile Include="XAS\_XAS.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Runtime" Version="4.3.1" />
   </ItemGroup>
 
 </Project>

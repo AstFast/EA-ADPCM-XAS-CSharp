@@ -1,9 +1,9 @@
 ﻿using int32x4 = System.Runtime.Intrinsics.Vector128<int>;
 using uint32x4 = System.Runtime.Intrinsics.Vector128<uint>;
 using int16x8 = System.Runtime.Intrinsics.Vector128<short>;
-using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -85,6 +85,52 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 			return result;
 		}
+#if NET7_0
+		public static void decode_XAS_Chunk_SIMD(XAS_Chunk in_chunk, ref short[] out_PCM)
+		{
+			uint[] __temp = new uint[in_chunk.headers.Length];
+			for (int i = 0; i < __temp.Length; i++)
+			{
+				__temp[i] = in_chunk.headers[i].data;
+			}
+			Vector128<int> head = Vector128.Create(__temp).AsInt32();
+			uint32x4 rounding = Vector128<uint>.AllBitsSet;
+			uint32x4 coef_mask = Vector128.ShiftRightLogical(rounding,30);
+			int32x4 nibble_mask = Vector128.ShiftLeft(rounding.AsInt32(),28);
+			rounding = Vector128.ShiftLeft(Vector128.ShiftRightLogical(rounding,31),(fixed_point_offset - 1));
+			int16x8 samples = Vector128.ShiftLeft(Vector128.ShiftRightArithmetic(head.AsInt16(),4),4);
+			int32x4 shift = Vector128.ShiftRightArithmetic(Vector128.Create<int>(const_shift) + Vector128.ShiftLeft(head,12),28);
+			int32x4 coef_index = head & coef_mask.AsInt32();
+			int16x8 coefs = LoadByIndex(coef_index, ea_adpcm_table_v4).AsInt16();
+			SaveWithStep(samples.AsInt32(), ref out_PCM, 16);
+			Vector128<int> _shuffle = Vector128.Create<byte>(shuffle).AsInt32();
+            for (int i = 0; i < 4; i++)
+            {
+				int[] bytes = new int[4];
+				for (int j = 0; j < 4; j++)
+				{
+					bytes[j] = BitConverter.ToInt32(in_chunk.XAS_data[i * 4 + j], 0);
+				}
+				int32x4 data = Vector128.Create(bytes);
+				data = PermuteByIndex(data, _shuffle).AsInt32();
+				int itrs = 4 - ((i + 1) >> 2);
+                for (int j = 0; j < itrs; j++)
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+						int32x4 prediction = mul16_add32(samples, coefs);
+						int32x4 correction = RightShiftElements((data & nibble_mask), shift);
+						int32x4 predecode = Vector128.ShiftRightArithmetic((prediction + correction + rounding.AsInt32()),fixed_point_offset);
+						int16x8 decoded = Clip_int16(predecode);
+						samples = Vector128.ShiftRightArithmetic(samples,16) | Vector128.ShiftLeft(decoded,16);
+						data = Vector128.ShiftLeft(data , 4);
+					}
+					SaveWithStep(samples.AsInt32(), ref out_PCM, i * 8 + j * 2 + 2, 16);
+				}
+				
+			}
+        }
+#else
 		public static void decode_XAS_Chunk_SIMD(XAS_Chunk in_chunk, ref short[] out_PCM)
 		{
 			Vector128<int> head = Vector128.LoadUnsafe<XAS_SubChunkHeader[]>(ref in_chunk.headers).AsInt32();
@@ -124,5 +170,6 @@ namespace EA_ADPCM_XAS_CSharp
 				
 			}
         }
+		#endif
 	}
 }
