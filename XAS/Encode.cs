@@ -1,4 +1,5 @@
-﻿using static EA_ADPCM_XAS_CSharp.XASStruct;
+﻿using System.Runtime.InteropServices;
+using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
 {
 	internal unsafe partial class EAAudio
@@ -162,8 +163,28 @@ namespace EA_ADPCM_XAS_CSharp
 					encode_XAS_Chunk(ref _out_data[index], PCM);
 					index++;
 				}
-				byte[] out_data = new byte[_out_data.LongLength * 8];
-				Buffer.BlockCopy(_out_data,0,out_data,0,out_data.Length);
+				byte[] out_data = new byte[_out_data.LongLength * 76];
+				{
+					int _index = 0;
+					for (int i = 0; i < _out_data.Length; i++)
+					{
+						uint[] uints = new uint[4];
+						for (int j = 0; j < 4; j++)
+						{
+							uints[j] = _out_data[i].headers[j].data;
+						}
+						Buffer.BlockCopy(uints,0,out_data,_index,16);
+						_index += 16;
+						for (int j = 0; j < _out_data[i].XAS_data.Length; j++)
+						{
+							for (int k = 0; k < _out_data[i].XAS_data[j].Length; k++)
+							{
+								out_data[_index] = _out_data[i].XAS_data[j][k];
+								_index++;
+							}
+						}
+					}
+				}
 				return out_data;
 			}
 			#endregion
