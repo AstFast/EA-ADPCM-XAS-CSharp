@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using static EA_ADPCM_XAS_CSharp.XASStruct;
+﻿using static EA_ADPCM_XAS_CSharp.XASStruct;
 namespace EA_ADPCM_XAS_CSharp
 {
 	internal unsafe partial class EAAudio
@@ -87,7 +86,7 @@ namespace EA_ADPCM_XAS_CSharp
 				}
 				return new EncodedSample { decoded = (Int16)decoded, encoded = (byte)res };
 			}
-			static void encode_XAS_Chunk(ref XAS_Chunk out_chunk,in short[] in_PCM)
+			static void encode_XAS_Chunk(ref XAS_Chunk out_chunk, in short[] in_PCM)
 			{
 				out_chunk.headers = new XAS_SubChunkHeader[4];
 				out_chunk.XAS_data = new byte[15][];
@@ -131,7 +130,7 @@ namespace EA_ADPCM_XAS_CSharp
 					}
 				}
 			}
-			public static byte[] encode_XAS_v1(in short[] in_PCM,uint encode_size, uint n_samples_per_channel, uint n_channels)
+			public static byte[] encode_XAS_v1(in short[] in_PCM, uint encode_size, uint n_samples_per_channel, uint n_channels)
 			{
 				uint n_chunks_per_channel = _GetNumXASChunks(n_samples_per_channel);
 				XAS_Chunk[] _out_data = new XAS_Chunk[encode_size / 76];
@@ -159,11 +158,11 @@ namespace EA_ADPCM_XAS_CSharp
 					{
 						PCM[sample_ind] = in_PCM[in_PCM_index + channel_ind + sample_ind * n_channels];
 					}
-					Array.Fill<short>(PCM,0,(int)samples_remain_per_channel, (int)(128 - samples_remain_per_channel));
+					Array.Fill<short>(PCM, 0, (int)samples_remain_per_channel, (int)(128 - samples_remain_per_channel));
 					encode_XAS_Chunk(ref _out_data[index], PCM);
 					index++;
 				}
-				byte[] out_data = new byte[_out_data.LongLength * 76];
+				byte[] out_data = new byte[_out_data.Length * 76];
 				{
 					int _index = 0;
 					for (int i = 0; i < _out_data.Length; i++)
@@ -173,7 +172,7 @@ namespace EA_ADPCM_XAS_CSharp
 						{
 							uints[j] = _out_data[i].headers[j].data;
 						}
-						Buffer.BlockCopy(uints,0,out_data,_index,16);
+						Buffer.BlockCopy(uints, 0, out_data, _index, 16);
 						_index += 16;
 						for (int j = 0; j < _out_data[i].XAS_data.Length; j++)
 						{

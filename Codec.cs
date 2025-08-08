@@ -55,7 +55,7 @@ namespace EA_ADPCM_XAS_CSharp
 			}
 			public static byte[] encode_XAS_v1(in byte[] rawdata, uint n_samples_per_channel, uint channels)
 			{
-				uint encode_size = GetXASEncodedSize(n_samples_per_channel, channels);
+				uint encode_size = GetXASEncodedSize((uint)(rawdata.Length / channels / 2), channels);
 				short[] shorts = new short[rawdata.Length / 2];
 				Buffer.BlockCopy(rawdata, 0, shorts, 0, rawdata.Length);
 				return EA.XAS.encode_XAS_v1(shorts, encode_size, n_samples_per_channel, channels);
@@ -174,11 +174,13 @@ namespace EA_ADPCM_XAS_CSharp
 			public Int16 decoded;
 			public byte encoded;
 		}
+		[StructLayout(LayoutKind.Sequential, Size = 76)]
 		public struct XAS_Chunk
 		{
 			public XAS_SubChunkHeader[] headers;
 			public byte[][] XAS_data;
 		}
+		[StructLayout(LayoutKind.Sequential, Size = 4)]
 		public struct XAS_SubChunkHeader
 		{
 			public uint data;
