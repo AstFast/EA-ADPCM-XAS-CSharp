@@ -40,26 +40,37 @@ namespace EA_ADPCM_XAS_CSharp
 		}
 		public class XAS
 		{
+            public static byte[] decode_EA_XAS_v1(in byte[] raw_data, uint channels)
+            {
+                uint n_size = ((uint)raw_data.Length / 76) * 128;
+				Span<short> out_data = new short[n_size];
+				EAAudio.XAS.decode_EA_XAS_v1(raw_data,out_data,n_size / channels,channels);
+				return MemoryMarshal.Cast<short,byte>(out_data).ToArray();
+            }
 			
-			public static byte[] decode_XAS_v1(in byte[] in_data, uint channels)
+            public static byte[] decode_EA_XAS_v1(in byte[] raw_data, uint channels,int nSamples)
 			{
-				uint n_total_samples = (uint)((in_data.Length / 76) * 128);
-				short[] PCM_data = new short[sizeof(short) * n_total_samples];
-				EA.XAS.decode_XAS_v1(in_data, ref PCM_data, n_total_samples / channels, channels);
-				return ShortArrayToByteArray(PCM_data);
+				return EAAudio.XAS.decode_EA_XAS_v1(raw_data,(int)channels,nSamples).ToArray();
 			}
-			
-			public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
+
+            public static uint GetXASEncodedSize(uint n_samples_per_channel, uint n_channels)
 			{
 				return XASStruct.GetXASEncodedSize(n_samples_per_channel, n_channels);
 			}
-			public static byte[] encode_XAS_v1(in byte[] rawdata, uint n_samples_per_channel, uint channels)
+			public static byte[] encode_EA_XAS_v1(Span<short> raw_data,uint channels)
 			{
-				uint encode_size = GetXASEncodedSize((uint)(rawdata.Length / channels / 2), channels);
-				short[] shorts = new short[rawdata.Length / 2];
-				Buffer.BlockCopy(rawdata, 0, shorts, 0, rawdata.Length);
-				return EA.XAS.encode_XAS_v1(shorts, encode_size, n_samples_per_channel, channels);
-			}
+				uint n_samples_per_channel = (uint)(raw_data.Length / channels / 2);
+				
+                uint encode_size = GetXASEncodedSize(n_samples_per_channel,channels);
+                Span<byte> de_data = new byte[encode_size];
+				EAAudio.XAS.encode_EA_XAS_v1(raw_data, de_data, n_samples_per_channel, channels);
+				return de_data.ToArray();
+            }
+			public static byte[] encode_EA_XAS_v1(in byte[] PCM_data, uint channels)
+			{
+                return EAAudio.XAS.encode_EA_XAS_v1(PCM_data,channels).ToArray();
+
+            }
 		}
 		
 	}
@@ -102,7 +113,8 @@ namespace EA_ADPCM_XAS_CSharp
 			new short[]{(short)(-0.812500 * fixp_exponent), (short)(1.796875 * fixp_exponent)},
 			new short[]{(short)(-0.859375 * fixp_exponent), (short)(1.531250 * fixp_exponent)}
 		};
-		public static int[] ea_adpcm_table_v4 = new int[] { 0, 240, 460, 392 };
+		public static int[] ea_adpcm_table_v3_const = new int[] { 0, 15728640, 30211888, 25755428 };
+        public static int[] ea_adpcm_table_v4 = new int[] { 0, 240, 460, 392 };
 		public static int[] const_shift = new int[] { 16 - fixed_point_offset, 16 - fixed_point_offset, 16 - fixed_point_offset, 16 - fixed_point_offset };
 		public static byte[] shuffle = new byte[] { 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3 };
 		public const int subchunks_in_XAS_chunk = 4;
@@ -174,13 +186,11 @@ namespace EA_ADPCM_XAS_CSharp
 			public Int16 decoded;
 			public byte encoded;
 		}
-		[StructLayout(LayoutKind.Sequential, Size = 76)]
-		public struct XAS_Chunk
+        public struct XAS_Chunk
 		{
-			public XAS_SubChunkHeader[] headers;
-			public byte[][] XAS_data;
+			public fixed int headers[4];
+			public fixed byte XAS_data[60];
 		}
-		[StructLayout(LayoutKind.Sequential, Size = 4)]
 		public struct XAS_SubChunkHeader
 		{
 			public uint data;

@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿
+using System;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
 
 namespace EA_ADPCM_XAS_CSharp
@@ -7,20 +8,29 @@ namespace EA_ADPCM_XAS_CSharp
     {
         public partial class XAS
         {
-            public static void decode_EA_XAS_v1(Span<byte> in_data, Span<short> out_PCM, uint n_samples_per_channel, uint n_channels)
+            short decode_XA_sample(short[] prev_samples, short[] coef, char int4, byte shift)
+            {
+
+                int correction = (int)int4 << shift;
+                int prediction = prev_samples[1] * coef[0] + prev_samples[0] * coef[1];
+                return Clip_int16((prediction + correction + def_rounding) >> fixed_point_offset);
+            }
+            public static void decode_EA_XAS_v1(Span<XAS_Chunk> _in_data, Span<short> out_PCM, uint n_samples_per_channel, uint n_channels)
             {
                 if (n_samples_per_channel == 0)
+                {
                     return;
-                Span<XAS_Chunk> _in_data = MemoryMarshal.Cast<byte, XAS_Chunk>(in_data);
+                }
+
                 Span<short> PCM = new short[128];
-                int _in_data_index = 0;
+                int _in_data_offset = 0;
                 uint n_chunks_per_channel = _GetNumXASChunks(n_samples_per_channel);
                 for (int chunk_ind = 0; chunk_ind < n_chunks_per_channel - 1; chunk_ind++)
                 {
                     for (int channel_ind = 0; channel_ind < n_channels; channel_ind++)
                     {
-                        VectorSIMD.decode_EA_XAS_Chunk_SIMD(_in_data[_in_data_index], PCM);
-                        _in_data_index++;
+                        VectorSIMD.decode_XAS_Chunk_SIMD(_in_data[_in_data_offset],PCM);
+                        _in_data_offset++;
                         for (int sample_ind = 0; sample_ind < 128; sample_ind++)
                         {
                             out_PCM[channel_ind + sample_ind * (int)n_channels] = PCM[sample_ind];
@@ -31,8 +41,8 @@ namespace EA_ADPCM_XAS_CSharp
                 uint samples_remain_per_channel = n_samples_per_channel - (n_chunks_per_channel - 1) * 128;
                 for (int channel_ind = 0; channel_ind < n_channels; channel_ind++)
                 {
-                    VectorSIMD.decode_EA_XAS_Chunk_SIMD(_in_data[_in_data_index], PCM);
-                    _in_data_index++;
+                    VectorSIMD.decode_XAS_Chunk_SIMD(_in_data[_in_data_offset],PCM);
+                    _in_data_offset++;
                     for (int sample_ind = 0; sample_ind < samples_remain_per_channel; sample_ind++)
                     {
                         out_PCM[channel_ind + sample_ind * (int)n_channels] = PCM[sample_ind];

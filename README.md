@@ -50,3 +50,5 @@ CrabJournal:[GitHub - CrabJournal/EA-ADPCM-Codec](https://github.com/CrabJournal
 lgdel:[GitHub-lgdel/eaxas](https://github.com/lgdel/eaxas)
 
 [XA | SimsTek Wiki | Fandom](https://simstek.fandom.com/wiki/XA)
+
+xas_decode.exe

@@ -1,0 +1,90 @@
+﻿using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using static EA_ADPCM_XAS_CSharp.XASStruct;
+
+namespace EA_ADPCM_XAS_CSharp
+{
+    internal class VectorSIMD
+    {
+        static void RA_SHIFT_ELEMENT(ref Vector128<int> RES,Vector128<int> VAL,Vector128<int> SHIFT,byte NUM_EL)
+        {
+            RES = Sse41.Insert(RES, Sse41.Extract(VAL, NUM_EL) >> Sse41.Extract(SHIFT, NUM_EL), NUM_EL);
+        }
+        static Vector128<int> RIFF(Vector128<int> a,Vector128<int> shift)
+        {
+            Vector128<int> res = Sse2.ConvertScalarToVector128Int32(Sse2.ConvertToInt32(a) >> Sse2.ConvertToInt32(shift));
+            RA_SHIFT_ELEMENT(ref res, a, shift, 1);
+            RA_SHIFT_ELEMENT(ref res, a, shift, 2);
+            RA_SHIFT_ELEMENT(ref res, a, shift, 3);
+            return res;
+        }
+        static Vector128<int> LoadByIndex(Vector128<int> indexes,int[] mem)
+        {
+            var tmp = Vector128<int>.Zero;
+            tmp = Sse41.Insert(tmp, mem[Sse41.Extract(indexes, 0)], 0);
+            tmp = Sse41.Insert(tmp, mem[Sse41.Extract(indexes, 1)], 1);
+            tmp = Sse41.Insert(tmp, mem[Sse41.Extract(indexes, 2)], 2);
+            tmp = Sse41.Insert(tmp, mem[Sse41.Extract(indexes, 3)], 3);
+            return tmp;
+        }
+        static void SaveWithStep(Vector128<int> vect,Span<int> mem, int step)
+        {
+            mem[0] = vect.GetElement(0);
+            mem[step] = vect.GetElement(1);
+            mem[step * 2] = vect.GetElement(2);
+            mem[step * 3] = vect.GetElement(3);
+        }
+        public static unsafe void decode_XAS_Chunk_SIMD(XAS_Chunk in_chunk,Span<short> out_PCM) 
+        {
+            int[] head_temp = new int[4];
+            for (int i = 0; i < 4; i++)
+            {
+                head_temp[i] = (int)in_chunk.headers[i].data;
+            }
+            Vector128<int> head = Vector128.Create(head_temp);
+            Vector128<uint> rounding = Vector128<uint>.Zero;
+            Vector128<uint> coef_mask = rounding >> 30;
+            Vector128<int> nibble_mask = rounding.AsInt32() << 28;
+            rounding = (rounding >> 31 << (fixed_point_offset - 1));
+            Vector128<short> samples = head.AsInt16();
+            samples = samples >> 4 << 4;
+            Vector128<int> shift = head;
+            shift = Vector128.Create(const_shift) + ((shift << 12).AsUInt32() >> 28).AsInt32();
+            Vector128<int> coef_index = head & coef_mask.AsInt32();
+            Vector128<short> coefs = LoadByIndex(coef_index, ea_adpcm_table_v3_const).AsInt16();
+            SaveWithStep(samples.AsInt32(),MemoryMarshal.Cast<short,int>(out_PCM), 16);
+            Vector128<int> _shuffle = Vector128.Create(shuffle).AsInt32();
+            int[] XAS_data_temp = new int[16];
+            for (int i = 0; i < in_chunk.XAS_data.Length; i++)
+            {
+                XAS_data_temp[i] = BitConverter.ToInt32(in_chunk.XAS_data[i]);
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                Vector128<int> data = Vector128.Create(XAS_data_temp, i * 4);
+                //Vector128<int> data = Sse2.LoadVector128(&in_chunk.XAS_data[0][i * 16]);
+                data = Ssse3.Shuffle(data.AsByte(), _shuffle.AsByte()).AsInt32();
+
+                int itrs = 4 - ((i + 1) >> 2);
+
+                for (int j = 0; j < itrs; j++)
+                {
+                    for (int k = 0; k < 2; k++)
+                    {
+                        Vector128<int> prediction = Sse41.MultiplyAddAdjacent(samples, coefs);
+                        Vector128<int> correction = RIFF((data & nibble_mask).AsInt32(),shift);
+                        Vector128<int> predecode = (prediction + correction + rounding.AsInt32()) >> fixed_point_offset;
+                        Vector128<short> decoded = Sse2.PackSignedSaturate(predecode,predecode);
+                        samples = ((samples.AsUInt32() >> 16) | ((decoded.AsUInt16()) << 16).AsUInt32()).AsInt16();
+                        data = data << 4;
+                    }
+                    SaveWithStep(samples.AsInt32(), MemoryMarshal.Cast<short,int>(out_PCM.Slice(i * 8 + j * 2 + 2)), 16);
+                }
+            }
+
+        }
+        
+
+    }
+}

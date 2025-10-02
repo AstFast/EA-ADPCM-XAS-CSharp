@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;</TargetFrameworks>
     <RootNamespace>EA_ADPCM_XAS_CSharp</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -10,15 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="XAS\Old_Decode.cs.txt" />
+    <None Remove="XAS\Old_Vector_SIMD.cs.txt" />
     <None Remove="XA\Maxis\Decode.txt" />
     <None Remove="XA\Maxis\Encode.txt" />
     <None Remove="XA\R\Decode.txt" />
     <None Remove="XA\R\Encode.txt" />
     <None Remove="XA\R\_R2.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="XAS\_XAS.txt" />
   </ItemGroup>
 
   <ItemGroup>
