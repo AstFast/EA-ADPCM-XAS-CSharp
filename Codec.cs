@@ -166,6 +166,7 @@ namespace EA_ADPCM_XAS_CSharp
 			Buffer.BlockCopy(shortArray, 0, byteArray, 0, byteArray.Length);
 			return ref byteArray;
 		}
+		/*
 		public struct SamplesByte
 		{
 			public byte data;
@@ -180,7 +181,7 @@ namespace EA_ADPCM_XAS_CSharp
 				get { return (sbyte)((data >> 4) & 0x0F); }
 				set { data = (byte)((data & 0x0F) | ((value & 0x0F) << 4)); }
 			}
-		}
+		}*/
 		public struct EncodedSample
 		{
 			public Int16 decoded;
@@ -189,7 +190,7 @@ namespace EA_ADPCM_XAS_CSharp
         public struct XAS_Chunk
 		{
 			public fixed int headers[4];
-			public fixed byte XAS_data[60];
+			public fixed byte XAS_data[60];//[15][4]
 		}
 		public struct XAS_SubChunkHeader
 		{
@@ -230,23 +231,7 @@ namespace EA_ADPCM_XAS_CSharp
 		}
 		public static short Get_s16be(ref Span<byte> ptr) 
 		{
-			return ToBigEndian16(Get_s16le(ref ptr));
-		}
-		public static short Get_s16le(ref Span<byte> ptr)
-		{
-			short temp = BitConverter.ToInt16(ptr);
-			ptr = ptr.Slice(2);
-			return temp;
-		}
-		public static int Get_s32be(ref Span<byte> ptr)
-		{
-			return ToBigEndian16(Get_s32le(ref ptr));
-		}
-		public static int Get_s32le(ref Span<byte> ptr)
-		{
-			int temp = BitConverter.ToInt32(ptr);
-			ptr = ptr.Slice(4);
-			return temp;
+			return ToBigEndian16(BitConverter.ToInt16(ptr));
 		}
 		public static void bufferWrite16BEUnalign(ref Span<byte> data, int ToSample)
 		{
