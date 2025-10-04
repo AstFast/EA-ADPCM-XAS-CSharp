@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Threading.Channels;
 using static EA_ADPCM_XAS_CSharp.XASStruct;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EA_ADPCM_XAS_CSharp
 {

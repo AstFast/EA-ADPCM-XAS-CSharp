@@ -55,6 +55,8 @@ xas_decode.exe
 
 [vgmstream](https://github.com/vgmstream/vgmstream)
 
+[FFmpeg](https://github.com/FFmpeg/FFmpeg)
+
 ### Digression
 
 I strongly recommend using EA's public tools (if possible, regardless of the method), as they can ensure sufficient accuracy.
