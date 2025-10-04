@@ -1,6 +1,7 @@
-﻿using EA = EA_ADPCM_XAS_CSharp.EAAudio;
-using static EA_ADPCM_XAS_CSharp.XASStruct;
+﻿using System;
 using System.Runtime.InteropServices;
+using static EA_ADPCM_XAS_CSharp.XASStruct;
+using EA = EA_ADPCM_XAS_CSharp.EAAudio;
 
 namespace EA_ADPCM_XAS_CSharp
 {
@@ -113,7 +114,14 @@ namespace EA_ADPCM_XAS_CSharp
 			new short[]{(short)(-0.812500 * fixp_exponent), (short)(1.796875 * fixp_exponent)},
 			new short[]{(short)(-0.859375 * fixp_exponent), (short)(1.531250 * fixp_exponent)}
 		};
-		public static int[] ea_adpcm_table_v3_const = new int[] { 0, 15728640, 30211888, 25755428 };
+        public static readonly float[,] xa_coefs =  new float[,]
+		{
+		    { 0.0f,       0.0f      },
+		    { 0.9375f,    0.0f      },
+		    { 1.796875f, -0.8125f   },
+		    { 1.53125f,  -0.859375f },
+		};
+        public static int[] ea_adpcm_table_v3_const = new int[] { 0, 15728640, 30211888, 25755428 };
         public static int[] ea_adpcm_table_v4 = new int[] { 0, 240, 460, 392 };
 		public static int[] const_shift = new int[] { 16 - fixed_point_offset, 16 - fixed_point_offset, 16 - fixed_point_offset, 16 - fixed_point_offset };
 		public static byte[] shuffle = new byte[] { 12, 8, 4, 0, 13, 9, 5, 1, 14, 10, 6, 2, 15, 11, 7, 3 };
@@ -233,7 +241,11 @@ namespace EA_ADPCM_XAS_CSharp
 		{
 			return ToBigEndian16(BitConverter.ToInt16(ptr));
 		}
-		public static void bufferWrite16BEUnalign(ref Span<byte> data, int ToSample)
+		public static uint get_u32le(Span<byte> mem)
+		{
+			return (uint)(mem[3] << 24 | (mem[2] << 16) | (mem[1] << 8) | mem[0]);
+		}
+        public static void bufferWrite16BEUnalign(ref Span<byte> data, int ToSample)
 		{
 #if NET7_0
             short _temp_ = ToBigEndian16(ToSample);
@@ -277,5 +289,39 @@ namespace EA_ADPCM_XAS_CSharp
 				return false;
 			}
 		}
-	}
+        public static bool ReadSamples(in byte[] data, ref int data_index, Span<short> output, int channels, int nSamples)
+        {
+            try
+            {
+                if (channels == 1)
+                {
+                    //Buffer.BlockCopy(data, data_index, output, 0, 2 * nSamples);
+					output = MemoryMarshal.Cast<byte, short>(data.AsSpan<byte>().Slice(data_index, 2 * nSamples));
+                    data_index += 2 * nSamples;
+                }
+                else
+                {
+                    int samplesToRead = nSamples * channels;
+                    short[] rawSamples = new short[samplesToRead];
+                    Buffer.BlockCopy(data, data_index, rawSamples, 0, 2 * samplesToRead);
+                    data_index += 2 * samplesToRead;
+                    for (int c = 0; c < channels; c++)
+                    {
+                        int rawSamplesIte = c;
+                        int outputIte_index = c * nSamples;
+                        for (int i = 0; i < nSamples; i++)
+                        {
+                            output[outputIte_index++] = rawSamples[rawSamplesIte];
+                            rawSamplesIte += channels;
+                        }
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
 }

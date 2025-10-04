@@ -52,3 +52,13 @@ lgdel:[GitHub-lgdel/eaxas](https://github.com/lgdel/eaxas)
 [XA | SimsTek Wiki | Fandom](https://simstek.fandom.com/wiki/XA)
 
 xas_decode.exe
+
+[vgmstream](https://github.com/vgmstream/vgmstream)
+
+### Digression
+
+I strongly recommend using EA's public tools (if possible, regardless of the method), as they can ensure sufficient accuracy.
+
+### License
+
+GPL-3.0 License
